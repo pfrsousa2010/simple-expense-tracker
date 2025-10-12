@@ -9,6 +9,7 @@ class DespesaItem extends StatelessWidget {
   final Categoria categoria;
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
+  final bool showSwipeIcon;
 
   const DespesaItem({
     super.key,
@@ -16,6 +17,7 @@ class DespesaItem extends StatelessWidget {
     required this.categoria,
     this.onTap,
     this.onDelete,
+    this.showSwipeIcon = true,
   });
 
   @override
@@ -116,20 +118,22 @@ class DespesaItem extends StatelessWidget {
             ),
           ],
         ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.swipe, size: 16, color: AppTheme.primaryColor),
-              const SizedBox(width: 4),
-            ],
-          ),
-        ),
+        trailing: showSwipeIcon
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.swipe, size: 16, color: AppTheme.primaryColor),
+                    const SizedBox(width: 4),
+                  ],
+                ),
+              )
+            : null,
         onTap: onTap,
       ),
     );

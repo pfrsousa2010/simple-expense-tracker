@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
@@ -34,7 +35,25 @@ class ProximosVencimentosScreen extends StatelessWidget {
                 }).toList()
                 ..sort((a, b) => a.diaVencimento!.compareTo(b.diaVencimento!));
 
-          if (proximasDespesas.isEmpty) {
+          // Agrupar despesas por data de vencimento
+          final Map<DateTime, List<dynamic>> despesasAgrupadas = {};
+          for (var despesa in proximasDespesas) {
+            final vencimento = DateTime(
+              despesa.ano,
+              despesa.mes,
+              despesa.diaVencimento!,
+            );
+            if (!despesasAgrupadas.containsKey(vencimento)) {
+              despesasAgrupadas[vencimento] = [];
+            }
+            despesasAgrupadas[vencimento]!.add(despesa);
+          }
+
+          // Converter para lista ordenada por data
+          final gruposOrdenados = despesasAgrupadas.entries.toList()
+            ..sort((a, b) => a.key.compareTo(b.key));
+
+          if (gruposOrdenados.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -58,71 +77,172 @@ class ProximosVencimentosScreen extends StatelessWidget {
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),
-            itemCount: proximasDespesas.length,
+            itemCount: gruposOrdenados.length,
             itemBuilder: (context, index) {
-              final despesa = proximasDespesas[index];
-              final categoria = provider.categorias.firstWhere(
-                (cat) => cat.id == despesa.categoriaId,
-              );
+              final grupo = gruposOrdenados[index];
+              final dataVencimento = grupo.key;
+              final despesasDoGrupo = grupo.value;
 
-              final vencimento = DateTime(
-                despesa.ano,
-                despesa.mes,
-                despesa.diaVencimento!,
-              );
-              final diasParaVencer = vencimento.difference(hoje).inDays;
+              final diasParaVencer = dataVencimento.difference(hoje).inDays;
 
-              // Cor do card baseada na proximidade do vencimento
-              Color? cardColor;
+              // Cores baseadas na proximidade do vencimento
+              Color urgencyColor;
+              Color urgencyBackgroundColor;
+              String urgencyText;
+              IconData urgencyIcon;
+
               if (diasParaVencer == 0) {
-                cardColor = Colors.orange[50]; // Vence hoje
+                urgencyColor = const Color(0xFFFF6B35); // Laranja vibrante
+                urgencyBackgroundColor = const Color(
+                  0xFFFF6B35,
+                ).withOpacity(0.15);
+                urgencyText = 'Vence hoje!';
+                urgencyIcon = Icons.warning_rounded;
               } else if (diasParaVencer <= 3) {
-                cardColor = Colors.red[50]; // Vence em até 3 dias
+                urgencyColor = const Color(0xFFE74C3C); // Vermelho
+                urgencyBackgroundColor = const Color(
+                  0xFFE74C3C,
+                ).withOpacity(0.15);
+                urgencyText = diasParaVencer == 1
+                    ? 'Vence amanhã'
+                    : 'Vence em $diasParaVencer dias';
+                urgencyIcon = Icons.schedule_rounded;
               } else if (diasParaVencer <= 7) {
-                cardColor = Colors.yellow[50]; // Vence em até 7 dias
+                urgencyColor = const Color(0xFFF39C12); // Amarelo
+                urgencyBackgroundColor = const Color(
+                  0xFFF39C12,
+                ).withOpacity(0.15);
+                urgencyText = 'Vence em $diasParaVencer dias';
+                urgencyIcon = Icons.access_time_rounded;
+              } else {
+                urgencyColor = const Color(0xFF3498DB); // Azul
+                urgencyBackgroundColor = const Color(
+                  0xFF3498DB,
+                ).withOpacity(0.15);
+                urgencyText = 'Vence em $diasParaVencer dias';
+                urgencyIcon = Icons.calendar_today_rounded;
               }
 
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Card(
-                  elevation: 2,
-                  color: cardColor,
-                  child: Column(
-                    children: [
-                      DespesaItem(despesa: despesa, categoria: categoria),
-                      if (diasParaVencer <= 7)
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: diasParaVencer == 0
-                                ? Colors.orange
-                                : diasParaVencer <= 3
-                                ? Colors.red
-                                : Colors.amber,
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(4),
-                              bottomRight: Radius.circular(4),
-                            ),
-                          ),
-                          child: Text(
-                            diasParaVencer == 0
-                                ? '⚠️ Vence hoje!'
-                                : diasParaVencer == 1
-                                ? '⏰ Vence amanhã'
-                                : '⏰ Vence em $diasParaVencer dias',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        urgencyBackgroundColor,
+                        urgencyBackgroundColor.withOpacity(0.05),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: urgencyColor.withOpacity(0.3),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: urgencyColor.withOpacity(0.2),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                        spreadRadius: 0,
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                        spreadRadius: 0,
+                      ),
                     ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
+                              child: Column(
+                                children: despesasDoGrupo.asMap().entries.map((
+                                  entry,
+                                ) {
+                                  final despesaIndex = entry.key;
+                                  final despesa = entry.value;
+                                  final categoria = provider.categorias
+                                      .firstWhere(
+                                        (cat) => cat.id == despesa.categoriaId,
+                                      );
+
+                                  return Padding(
+                                    padding: EdgeInsets.only(
+                                      bottom:
+                                          despesaIndex <
+                                              despesasDoGrupo.length - 1
+                                          ? 12
+                                          : 0,
+                                    ),
+                                    child: DespesaItem(
+                                      despesa: despesa,
+                                      categoria: categoria,
+                                      showSwipeIcon: false,
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    urgencyColor.withOpacity(0.2),
+                                    urgencyColor.withOpacity(0.1),
+                                  ],
+                                ),
+                                border: Border(
+                                  top: BorderSide(
+                                    color: urgencyColor.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    urgencyIcon,
+                                    color: urgencyColor,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    urgencyText,
+                                    style: TextStyle(
+                                      color: urgencyColor,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               );
