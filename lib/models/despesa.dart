@@ -72,9 +72,10 @@ class Despesa {
     StatusPagamento? status,
     bool? isFixa,
     DateTime? dataCriacao,
+    bool clearId = false,
   }) {
     return Despesa(
-      id: id ?? this.id,
+      id: clearId ? null : (id ?? this.id),
       descricao: descricao ?? this.descricao,
       valor: valor ?? this.valor,
       categoriaId: categoriaId ?? this.categoriaId,

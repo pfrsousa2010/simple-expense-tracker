@@ -198,11 +198,11 @@ class ExpenseProvider with ChangeNotifier {
 
     for (var despesa in despesas) {
       final novaDespesa = despesa.copyWith(
-        id: null,
         mes: mesDestino,
         ano: anoDestino,
         status: StatusPagamento.aPagar,
         dataCriacao: DateTime.now(),
+        clearId: true,
       );
 
       print(

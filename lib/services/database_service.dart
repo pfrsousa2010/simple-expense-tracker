@@ -249,11 +249,11 @@ class DatabaseService {
 
     for (var despesa in despesasMesOrigem) {
       final novaDespesa = despesa.copyWith(
-        id: null,
         mes: mesDestino,
         ano: anoDestino,
         status: StatusPagamento.aPagar,
         dataCriacao: DateTime.now(),
+        clearId: true,
       );
       await createDespesa(novaDespesa);
     }
