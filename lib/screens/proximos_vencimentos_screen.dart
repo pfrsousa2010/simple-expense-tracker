@@ -83,7 +83,16 @@ class ProximosVencimentosScreen extends StatelessWidget {
               final dataVencimento = grupo.key;
               final despesasDoGrupo = grupo.value;
 
-              final diasParaVencer = dataVencimento.difference(hoje).inDays;
+              // Calcular diferença em dias corretamente (ignorando horas)
+              final hojeNormalizado = DateTime(hoje.year, hoje.month, hoje.day);
+              final vencimentoNormalizado = DateTime(
+                dataVencimento.year,
+                dataVencimento.month,
+                dataVencimento.day,
+              );
+              final diasParaVencer = vencimentoNormalizado
+                  .difference(hojeNormalizado)
+                  .inDays;
 
               // Cores baseadas na proximidade do vencimento
               Color urgencyColor;

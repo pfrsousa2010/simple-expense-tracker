@@ -99,7 +99,9 @@ class NotificationService {
   Future<void> _verificarENotificarVencimentos() async {
     final db = DatabaseService.instance;
     final hoje = DateTime.now();
-    final amanha = hoje.add(const Duration(days: 1));
+    // Normalizar para calcular amanhã corretamente
+    final hojeNormalizado = DateTime(hoje.year, hoje.month, hoje.day);
+    final amanhaNormalizado = hojeNormalizado.add(const Duration(days: 1));
 
     // Buscar todas as despesas
     final todasDespesas = await db.buscarTodasDespesas();
@@ -119,9 +121,9 @@ class NotificationService {
       if (despesa.status == StatusPagamento.pago ||
           despesa.diaVencimento == null)
         return false;
-      return despesa.ano == amanha.year &&
-          despesa.mes == amanha.month &&
-          despesa.diaVencimento == amanha.day;
+      return despesa.ano == amanhaNormalizado.year &&
+          despesa.mes == amanhaNormalizado.month &&
+          despesa.diaVencimento == amanhaNormalizado.day;
     }).toList();
 
     // Enviar notificação para hoje (se houver despesas)
