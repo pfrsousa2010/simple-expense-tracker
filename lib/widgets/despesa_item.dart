@@ -116,12 +116,20 @@ class DespesaItem extends StatelessWidget {
             ),
           ],
         ),
-        trailing: onDelete != null
-            ? IconButton(
-                icon: const Icon(Icons.delete, color: AppTheme.secondaryColor),
-                onPressed: onDelete,
-              )
-            : null,
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppTheme.primaryColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.swipe, size: 16, color: AppTheme.primaryColor),
+              const SizedBox(width: 4),
+            ],
+          ),
+        ),
         onTap: onTap,
       ),
     );

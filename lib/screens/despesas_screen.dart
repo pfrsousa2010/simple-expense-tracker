@@ -130,19 +130,101 @@ class _DespesasScreenState extends State<DespesasScreen> {
           ),
         ),
         ...despesas.map((despesa) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: DespesaItem(
-              despesa: despesa,
-              categoria: categoria,
-              onTap: () => _showEditDespesaDialog(context, despesa),
-              onDelete: () =>
-                  _showDeleteConfirmation(context, provider, despesa),
-            ),
+          return _buildDespesaItemWithSwipe(
+            context,
+            provider,
+            despesa,
+            categoria,
           );
         }),
         const Divider(height: 32),
       ],
+    );
+  }
+
+  Widget _buildDespesaItemWithSwipe(
+    BuildContext context,
+    ExpenseProvider provider,
+    Despesa despesa,
+    Categoria categoria,
+  ) {
+    return Dismissible(
+      key: Key('despesa_${despesa.id}'),
+      direction: DismissDirection.horizontal,
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          // Swipe para direita = Editar
+          _showEditDespesaDialog(context, despesa);
+          return false; // Não remove o item
+        } else if (direction == DismissDirection.endToStart) {
+          // Swipe para esquerda = Remover
+          return await _showDeleteConfirmation(context, provider, despesa);
+        }
+        return false;
+      },
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: AppTheme.accentColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: EdgeInsets.only(left: 20),
+            child: Row(
+              children: [
+                Icon(Icons.edit, color: Colors.white, size: 28),
+                SizedBox(width: 12),
+                Text(
+                  'Editar',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      secondaryBackground: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        decoration: BoxDecoration(
+          color: AppTheme.secondaryColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: EdgeInsets.only(right: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  'Remover',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Icon(Icons.delete, color: Colors.white, size: 28),
+              ],
+            ),
+          ),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: DespesaItem(
+          despesa: despesa,
+          categoria: categoria,
+          onTap: () => _showEditDespesaDialog(context, despesa),
+        ),
+      ),
     );
   }
 
@@ -470,25 +552,25 @@ class _DespesasScreenState extends State<DespesasScreen> {
     );
   }
 
-  Future<void> _showDeleteConfirmation(
+  Future<bool?> _showDeleteConfirmation(
     BuildContext context,
     ExpenseProvider provider,
     Despesa despesa,
   ) async {
-    showDialog(
+    final confirmado = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Excluir Despesa'),
         content: Text('Deseja realmente excluir "${despesa.descricao}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
             onPressed: () {
               provider.deletarDespesa(despesa.id!);
-              Navigator.pop(context);
+              Navigator.pop(context, true);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.secondaryColor,
@@ -499,5 +581,6 @@ class _DespesasScreenState extends State<DespesasScreen> {
         ],
       ),
     );
+    return confirmado;
   }
 }
