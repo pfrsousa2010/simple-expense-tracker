@@ -26,8 +26,7 @@ class Despesa {
   }) : dataCriacao = dataCriacao ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
+    final map = <String, dynamic>{
       'descricao': descricao,
       'valor': valor,
       'categoriaId': categoriaId,
@@ -38,6 +37,13 @@ class Despesa {
       'isFixa': isFixa ? 1 : 0,
       'dataCriacao': dataCriacao.toIso8601String(),
     };
+
+    // Só incluir o id se não for null
+    if (id != null) {
+      map['id'] = id;
+    }
+
+    return map;
   }
 
   factory Despesa.fromMap(Map<String, dynamic> map) {
@@ -68,7 +74,7 @@ class Despesa {
     DateTime? dataCriacao,
   }) {
     return Despesa(
-      id: id,
+      id: id ?? this.id,
       descricao: descricao ?? this.descricao,
       valor: valor ?? this.valor,
       categoriaId: categoriaId ?? this.categoriaId,

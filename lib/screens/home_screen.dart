@@ -5,11 +5,12 @@ import '../providers/expense_provider.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/saldo_card.dart';
-import '../widgets/despesa_item.dart';
 import '../widgets/categoria_gastos_card.dart';
 import 'receitas_screen.dart';
 import 'despesas_screen.dart';
 import 'categorias_screen.dart';
+import 'vencendo_hoje_screen.dart';
+import 'proximos_vencimentos_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -120,8 +121,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildCategoriasComLimite(provider),
                   const SizedBox(height: 24),
 
-                  // Próximos vencimentos
-                  _buildProximosVencimentos(provider),
+                  // Botões de Vencimentos
+                  _buildBotoesVencimentos(context, provider),
                 ],
               ),
             ),
@@ -184,41 +185,166 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildProximosVencimentos(ExpenseProvider provider) {
+  Widget _buildBotoesVencimentos(
+    BuildContext context,
+    ExpenseProvider provider,
+  ) {
     final hoje = DateTime.now();
-    final despesasComVencimento =
-        provider.despesas.where((d) => d.diaVencimento != null).toList()
-          ..sort((a, b) => a.diaVencimento!.compareTo(b.diaVencimento!));
 
-    final proximasDespesas = despesasComVencimento
-        .where((d) {
-          final vencimento = DateTime(d.ano, d.mes, d.diaVencimento!);
-          return vencimento.isAfter(hoje) || vencimento.isAtSameMomentAs(hoje);
-        })
-        .take(5)
-        .toList();
+    // Contar despesas vencendo hoje
+    final despesasHoje = provider.despesas.where((despesa) {
+      if (despesa.diaVencimento == null) return false;
+      final vencimento = DateTime(
+        despesa.ano,
+        despesa.mes,
+        despesa.diaVencimento!,
+      );
+      return vencimento.year == hoje.year &&
+          vencimento.month == hoje.month &&
+          vencimento.day == hoje.day;
+    }).length;
 
-    if (proximasDespesas.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    // Contar próximos vencimentos do mês
+    final proximosVencimentos = provider.despesas.where((despesa) {
+      if (despesa.diaVencimento == null) return false;
+      final vencimento = DateTime(
+        despesa.ano,
+        despesa.mes,
+        despesa.diaVencimento!,
+      );
+      return vencimento.isAfter(hoje) ||
+          (vencimento.year == hoje.year &&
+              vencimento.month == hoje.month &&
+              vencimento.day == hoje.day);
+    }).length;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Próximos Vencimentos',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
+        Text('Vencimentos', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
-        ...proximasDespesas.map((despesa) {
-          final categoria = provider.categorias.firstWhere(
-            (cat) => cat.id == despesa.categoriaId,
-          );
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: DespesaItem(despesa: despesa, categoria: categoria),
-          );
-        }),
+        Row(
+          children: [
+            // Botão Vencendo Hoje
+            Expanded(
+              child: Card(
+                elevation: 2,
+                color: despesasHoje > 0 ? Colors.orange[50] : null,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const VencendoHojeScreen(),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.alarm,
+                          size: 40,
+                          color: despesasHoje > 0 ? Colors.orange : Colors.grey,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Hoje',
+                          style: Theme.of(context).textTheme.titleMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: despesasHoje > 0
+                                ? Colors.orange
+                                : Colors.grey[300],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '$despesasHoje',
+                            style: TextStyle(
+                              color: despesasHoje > 0
+                                  ? Colors.white
+                                  : Colors.grey[700],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Botão Próximos Vencimentos
+            Expanded(
+              child: Card(
+                elevation: 2,
+                child: InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ProximosVencimentosScreen(),
+                      ),
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.event,
+                          size: 40,
+                          color: proximosVencimentos > 0
+                              ? Colors.blue
+                              : Colors.grey,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Próximos',
+                          style: Theme.of(context).textTheme.titleMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: proximosVencimentos > 0
+                                ? Colors.blue
+                                : Colors.grey[300],
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '$proximosVencimentos',
+                            style: TextStyle(
+                              color: proximosVencimentos > 0
+                                  ? Colors.white
+                                  : Colors.grey[700],
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

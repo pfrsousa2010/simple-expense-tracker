@@ -126,7 +126,12 @@ class ExpenseProvider with ChangeNotifier {
 
     // Agendar notificação se tiver data de vencimento
     if (novaDespesa.diaVencimento != null) {
-      await _notification.agendarNotificacaoVencimento(novaDespesa);
+      try {
+        await _notification.agendarNotificacaoVencimento(novaDespesa);
+      } catch (e) {
+        print('Erro ao agendar notificação: $e');
+        // Continua mesmo se a notificação falhar
+      }
     }
 
     await carregarDados();
@@ -137,9 +142,14 @@ class ExpenseProvider with ChangeNotifier {
 
     // Reagendar notificação
     if (despesa.id != null) {
-      await _notification.cancelarNotificacao(despesa.id!);
-      if (despesa.diaVencimento != null) {
-        await _notification.agendarNotificacaoVencimento(despesa);
+      try {
+        await _notification.cancelarNotificacao(despesa.id!);
+        if (despesa.diaVencimento != null) {
+          await _notification.agendarNotificacaoVencimento(despesa);
+        }
+      } catch (e) {
+        print('Erro ao reagendar notificação: $e');
+        // Continua mesmo se a notificação falhar
       }
     }
 

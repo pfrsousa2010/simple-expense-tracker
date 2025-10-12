@@ -14,13 +14,19 @@ class Categoria {
   });
 
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
+    final map = <String, dynamic>{
       'nome': nome,
       'icone': icone,
       'limiteGasto': limiteGasto,
       'isPadrao': isPadrao ? 1 : 0,
     };
+
+    // Só incluir o id se não for null
+    if (id != null) {
+      map['id'] = id;
+    }
+
+    return map;
   }
 
   factory Categoria.fromMap(Map<String, dynamic> map) {
