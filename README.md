@@ -1,58 +1,75 @@
-# 💰 Gerenciador de Despesas
+# 💰 Controle Financeiro
 
-Um aplicativo moderno e intuitivo para gerenciar suas receitas e despesas mensais, desenvolvido em Flutter com tema dark.
+Um aplicativo moderno e intuitivo para gerenciar suas receitas e despesas mensais, desenvolvido em Flutter com tema dark elegante.
 
 ## 📱 Funcionalidades
 
 ### 💵 Receitas
 - ✅ Adicionar fontes de renda mensais
-- ✅ Reaproveitar fontes de meses anteriores
+- ✅ Reaproveitar fontes de meses anteriores (autocomplete)
 - ✅ Editar e excluir receitas
 - ✅ Visualização do total de receitas do mês
+- ✅ Pull-to-refresh para atualizar dados
 
 ### 💳 Despesas
 - ✅ Adicionar despesas com categorias personalizáveis
-- ✅ Marcar status: Pago, Agendado ou Débito Automático
-- ✅ Definir dia de vencimento
-- ✅ Marcar como despesa fixa
+- ✅ Marcar status: Pago, Agendado, Débito Automático ou A Pagar
+- ✅ Definir dia de vencimento (1-31)
+- ✅ Marcar como despesa fixa para replicação futura
 - ✅ Copiar despesas fixas para outros meses
-- ✅ Notificações 1 dia antes do vencimento
-- ✅ Visualização por categorias
+- ✅ Editar e excluir despesas com swipe gesture
+- ✅ Visualização agrupada por categorias
+- ✅ Filtragem por status de pagamento
 
 ### 📊 Categorias
-- ✅ 10 categorias pré-definidas
-- ✅ Criar categorias personalizadas
+- ✅ 10 categorias pré-definidas com ícones emoji
+- ✅ Criar categorias personalizadas ilimitadas
 - ✅ Definir limite de gastos por categoria
 - ✅ Acompanhamento visual do uso do limite (barra de progresso)
 - ✅ Alertas visuais quando próximo ou acima do limite
-- ✅ Ícones personalizáveis (emojis)
+- ✅ Seletor de ícones com biblioteca completa de emojis
+- ✅ Proteção contra exclusão de categorias padrão
 
 ### 📈 Resumo Financeiro
 - ✅ Card de saldo com receitas, despesas e saldo total
 - ✅ Navegação por meses (anterior/próximo)
-- ✅ Visualização de categorias com limite
-- ✅ Próximos vencimentos
-- ✅ Indicadores visuais de status (pago, agendado, vencido)
+- ✅ Visualização de categorias com limite na home
+- ✅ **Vencimentos do dia** - card com contador de despesas vencendo hoje
+- ✅ **Próximos vencimentos** - card com contador de despesas a vencer no mês
+- ✅ Indicadores visuais de status (pago, agendado, a pagar, débito automático)
+- ✅ Códigos de cor por urgência de vencimento
+
+### 🔔 Notificações
+- ✅ Notificações diárias automáticas às 09:00
+- ✅ Lista de despesas vencendo no dia
+- ✅ Agendamento automático ao adicionar/editar despesas
+- ✅ Solicitação de permissões no primeiro uso
 
 ## 🎨 Design
 
-- **Tema:** Dark Mode
+- **Tema:** Dark Mode com Material Design 3
 - **Cores principais:**
   - 🟢 Verde (`#2ECC71`) - Receitas e saldos positivos
   - 🔴 Vermelho (`#E74C3C`) - Despesas e alertas
   - 🔵 Azul (`#3498DB`) - Destaques e ações
-  - 🟠 Laranja (`#F39C12`) - Avisos e limites próximos
-- **Layout:** Moderno, intuitivo e minimalista
+  - 🟠 Laranja/Amarelo (`#F39C12`) - Avisos e limites próximos
+  - 🟠 Laranja Vibrante (`#FF6B35`) - Vencimentos de hoje
+- **Paleta de fundo:**
+  - Background: `#121212`
+  - Surface: `#1E1E1E`
+  - Cards: `#2C2C2C`
+- **Layout:** Moderno, intuitivo e minimalista com glassmorphism e gradientes sutis
 - **Moeda:** Real Brasileiro (R$)
 - **Idioma:** Português (pt-BR)
+- **Ícone do app:** Customizado com adaptive icons
 
 ## 🚀 Como executar
 
 ### Pré-requisitos
 - Flutter SDK (3.9.2 ou superior)
-- Dart SDK
+- Dart SDK (^3.9.2)
 - Android Studio ou VS Code com extensões Flutter
-- Dispositivo Android ou emulador configurado
+- Dispositivo físico ou emulador (Android/iOS/Windows/Linux/macOS)
 
 ### Instalação
 
@@ -74,80 +91,173 @@ flutter run
 
 ### Build para produção
 
-Android:
+**Android:**
 ```bash
 flutter build apk --release
 ```
 
-iOS:
+**iOS:**
 ```bash
 flutter build ios --release
 ```
 
+**Windows:**
+```bash
+flutter build windows --release
+```
+
+**Linux:**
+```bash
+flutter build linux --release
+```
+
+**macOS:**
+```bash
+flutter build macos --release
+```
+
+### Gerar ícones do app
+```bash
+flutter pub run flutter_launcher_icons
+```
+
 ## 📦 Dependências principais
 
-- **sqflite** - Banco de dados local SQLite
-- **provider** - Gerenciamento de estado
-- **flutter_local_notifications** - Notificações locais
-- **intl** - Formatação de datas e moeda em pt-BR
-- **timezone** - Gerenciamento de timezones para notificações
+- **sqflite** (^2.3.0) - Banco de dados local SQLite
+- **provider** (^6.1.1) - Gerenciamento de estado
+- **flutter_local_notifications** (^17.0.0) - Notificações locais
+- **intl** (^0.20.2) - Formatação de datas e moeda em pt-BR
+- **timezone** (^0.9.2) - Gerenciamento de timezones para notificações
+- **flutter_iconpicker** (^3.2.4) - Seletor de ícones emoji para categorias
+- **path_provider** (^2.1.1) - Acesso a diretórios do sistema
+- **cupertino_icons** (^1.0.8) - Ícones iOS style
 
 ## 🗂️ Estrutura do projeto
 
 ```
 lib/
-├── models/              # Modelos de dados (Categoria, Despesa, FonteRenda)
-├── providers/           # Gerenciamento de estado (ExpenseProvider)
+├── models/              # Modelos de dados
+│   ├── categoria.dart
+│   ├── despesa.dart
+│   └── fonte_renda.dart
+├── providers/           # Gerenciamento de estado
+│   └── expense_provider.dart
 ├── screens/             # Telas do aplicativo
-│   ├── home_screen.dart
-│   ├── receitas_screen.dart
-│   ├── despesas_screen.dart
-│   └── categorias_screen.dart
-├── services/            # Serviços (Database, Notificações)
-├── utils/               # Utilitários (Tema, Formatadores)
+│   ├── home_screen.dart                    # Tela principal
+│   ├── receitas_screen.dart                # Gerenciamento de receitas
+│   ├── despesas_screen.dart                # Gerenciamento de despesas
+│   ├── categorias_screen.dart              # Gerenciamento de categorias
+│   ├── vencendo_hoje_screen.dart           # Despesas vencendo hoje
+│   ├── proximos_vencimentos_screen.dart    # Próximos vencimentos
+│   └── copiar_despesas_fixas_screen.dart   # Copiar despesas fixas
+├── services/            # Serviços
+│   ├── database_service.dart               # SQLite
+│   └── notification_service.dart           # Notificações
+├── utils/               # Utilitários
+│   ├── app_theme.dart                      # Tema dark
+│   └── formatters.dart                     # Formatadores pt-BR
 ├── widgets/             # Widgets reutilizáveis
+│   ├── saldo_card.dart
+│   ├── categoria_gastos_card.dart
+│   ├── despesa_item.dart
+│   ├── dia_vencimento_selector.dart
+│   └── dia_vencimento_selector_simples.dart
 └── main.dart            # Ponto de entrada do app
 ```
 
-## 🔔 Notificações
+## 🔔 Sistema de Notificações
 
-O app envia notificações locais 1 dia antes do vencimento de despesas cadastradas com data de vencimento. As notificações são agendadas automaticamente quando você:
-- Adiciona uma nova despesa com vencimento
-- Edita uma despesa existente
-- Copia despesas fixas para outro mês
+O aplicativo possui um sistema robusto de notificações para lembrá-lo dos vencimentos:
+
+### Notificações Diárias
+- **Horário:** Todos os dias às 09:00
+- **Conteúdo:** Lista de todas as despesas com vencimento no dia atual
+- **Agendamento:** Automático na inicialização do app
+
+### Como funciona
+1. Ao abrir o app pela primeira vez, solicita permissão para notificações
+2. Notificações são agendadas automaticamente quando você:
+   - Adiciona uma nova despesa com vencimento
+   - Edita uma despesa existente
+   - Copia despesas fixas para outro mês
+3. Todos os dias às 09:00, você recebe uma notificação com as despesas do dia
+4. Clique na notificação para ver os detalhes no app
 
 ## 💾 Persistência de Dados
 
-Os dados são armazenados localmente no dispositivo usando SQLite. Isso significa:
-- ✅ Funciona offline
-- ✅ Dados privados (não são enviados para nenhum servidor)
+Os dados são armazenados localmente no dispositivo usando **SQLite** (via sqflite):
+
+### Vantagens
+- ✅ Funciona 100% offline
+- ✅ Dados totalmente privados (não são enviados para nenhum servidor)
 - ✅ Rápido e eficiente
+- ✅ Estrutura relacional com integridade referencial
+
+### Limitações
 - ❌ Não há sincronização entre dispositivos
-- ❌ Dados são perdidos se o app for desinstalado (faça backup se necessário)
+- ❌ Dados são perdidos se o app for desinstalado
+- ❌ Não há backup automático em nuvem
+
+### Estrutura do Banco de Dados
+- **categorias** - ID, nome, ícone, limite de gasto, flag de padrão
+- **fontes_renda** - ID, nome, valor, mês, ano
+- **despesas** - ID, descrição, valor, categoria, mês, ano, dia vencimento, status, flag de fixa, data de criação
 
 ## 📝 Categorias Pré-definidas
 
-1. 🍔 Alimentação
-2. 🚗 Transporte
-3. ⛽ Combustível (com limite padrão de R$ 500)
-4. 🏠 Moradia
-5. ⚕️ Saúde
-6. 📚 Educação
-7. 🎮 Lazer
-8. 📦 Diversos (com limite padrão de R$ 300)
-9. 📄 Contas
-10. 👕 Vestuário
+Ao instalar o app pela primeira vez, as seguintes categorias são criadas automaticamente:
+
+1. 🍔 **Alimentação**
+2. 🚗 **Transporte**
+3. ⛽ **Combustível** (com limite padrão de R$ 500,00)
+4. 🏠 **Moradia**
+5. ⚕️ **Saúde**
+6. 📚 **Educação**
+7. 🎮 **Lazer**
+8. 📦 **Diversos** (com limite padrão de R$ 300,00)
+9. 📄 **Contas**
+10. 👕 **Vestuário**
+
+> **Nota:** As categorias padrão não podem ser excluídas, mas podem ter seus limites editados. Você pode criar quantas categorias personalizadas desejar.
 
 ## 🎯 Roadmap / Melhorias Futuras
 
-- [ ] Gráficos de gastos por categoria
-- [ ] Histórico de meses anteriores
-- [ ] Exportar relatórios (PDF/Excel)
-- [ ] Backup e restauração de dados
-- [ ] Múltiplas contas/carteiras
-- [ ] Metas de economia
-- [ ] Despesas parceladas
-- [ ] Widgets de home screen
+### Funcionalidades Planejadas
+- [ ] 📊 Gráficos interativos de gastos por categoria
+- [ ] 📅 Visualização de histórico de meses anteriores
+- [ ] 📄 Exportar relatórios (PDF/Excel/CSV)
+- [ ] ☁️ Backup e restauração de dados (Google Drive/iCloud)
+- [ ] 💼 Múltiplas contas/carteiras
+- [ ] 🎯 Metas de economia mensal
+- [ ] 💳 Despesas parceladas com controle de parcelas
+- [ ] 📱 Widgets de home screen (Android/iOS)
+- [ ] 🔍 Busca e filtros avançados
+- [ ] 🏷️ Tags personalizadas para despesas
+- [ ] 📸 Anexar fotos de comprovantes
+- [ ] 🌐 Modo claro (Light Theme)
+- [ ] 🔐 Autenticação biométrica
+- [ ] 💱 Suporte a múltiplas moedas
+
+## 💡 Dicas de Uso
+
+### Para melhor experiência:
+1. **Configure categorias com limites** - Ajuda a controlar gastos específicos
+2. **Marque despesas recorrentes como fixas** - Facilita a cópia para meses futuros
+3. **Defina vencimentos** - Receba notificações e não perca prazos
+4. **Use o pull-to-refresh** - Para atualizar os dados em todas as telas
+5. **Ative as notificações** - Seja lembrado das despesas no dia do vencimento
+6. **Dê nomes claros às receitas** - O autocomplete vai facilitar a reutilização
+
+### Atalhos e Gestos:
+- **Swipe** para editar ou excluir despesas
+- **Pull-to-refresh** para recarregar dados
+- **Toque** nos cards de vencimento para ver detalhes
+- **Navegue** entre meses usando as setas na tela principal
+
+## 🐛 Problemas Conhecidos
+
+- Notificações podem não funcionar em alguns dispositivos com otimização agressiva de bateria
+- Em alguns casos, o banco de dados precisa ser reinicializado após updates
 
 ## 📄 Licença
 
@@ -156,3 +266,15 @@ Este projeto foi desenvolvido para fins educacionais e uso pessoal.
 ## 👨‍💻 Desenvolvimento
 
 Desenvolvido com ❤️ usando Flutter
+
+### Tecnologias Utilizadas:
+- **Framework:** Flutter 3.9.2+
+- **Linguagem:** Dart
+- **Arquitetura:** Provider Pattern (State Management)
+- **Banco de Dados:** SQLite
+- **Design:** Material Design 3 Dark Theme
+- **Localização:** pt-BR (Português do Brasil)
+
+---
+
+**Versão:** 1.0.0+1
