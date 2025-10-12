@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => ExpenseProvider(),
       child: MaterialApp(
-        title: 'Gerenciador de Despesas',
+        title: 'Controle Financeiro',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         home: const HomeScreen(),

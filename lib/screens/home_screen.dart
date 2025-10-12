@@ -34,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gerenciador de Despesas'),
+        title: const Text('Controle Financeiro'),
         actions: [
           IconButton(
             icon: const Icon(Icons.category),
