@@ -81,46 +81,117 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
     ExpenseProvider provider,
     FonteRenda receita,
   ) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(
-            Icons.attach_money,
-            color: AppTheme.primaryColor,
-            size: 28,
-          ),
+    return Dismissible(
+      key: Key('receita_${receita.id}'),
+      direction: DismissDirection.horizontal,
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          // Swipe para direita = Editar
+          _showEditReceitaDialog(context, receita);
+          return false; // Não remove o item
+        } else if (direction == DismissDirection.endToStart) {
+          // Swipe para esquerda = Remover
+          return await _showDeleteConfirmation(context, provider, receita);
+        }
+        return false;
+      },
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.accentColor,
+          borderRadius: BorderRadius.circular(12),
         ),
-        title: Text(
-          receita.nome,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        subtitle: Text(
-          Formatters.formatCurrency(receita.valor),
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: AppTheme.primaryColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.edit, color: AppTheme.accentColor),
-              onPressed: () => _showEditReceitaDialog(context, receita),
+        child: const Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: EdgeInsets.only(left: 20),
+            child: Row(
+              children: [
+                Icon(Icons.edit, color: Colors.white, size: 28),
+                SizedBox(width: 12),
+                Text(
+                  'Editar',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-            IconButton(
-              icon: const Icon(Icons.delete, color: AppTheme.secondaryColor),
-              onPressed: () =>
-                  _showDeleteConfirmation(context, provider, receita),
+          ),
+        ),
+      ),
+      secondaryBackground: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.secondaryColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: EdgeInsets.only(right: 20),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  'Remover',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Icon(Icons.delete, color: Colors.white, size: 28),
+              ],
             ),
-          ],
+          ),
+        ),
+      ),
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: ListTile(
+          contentPadding: const EdgeInsets.all(16),
+          leading: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.attach_money,
+              color: AppTheme.primaryColor,
+              size: 28,
+            ),
+          ),
+          title: Text(
+            receita.nome,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          subtitle: Text(
+            Formatters.formatCurrency(receita.valor),
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: AppTheme.primaryColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          trailing: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.swipe, size: 16, color: AppTheme.primaryColor),
+                const SizedBox(width: 4),
+              ],
+            ),
+          ),
+          onTap: () => _showEditReceitaDialog(context, receita),
         ),
       ),
     );
@@ -130,7 +201,6 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
     final provider = context.read<ExpenseProvider>();
     final nomeController = TextEditingController();
     final valorController = TextEditingController();
-    final nomesFontes = await provider.getNomesFontesRenda();
 
     if (!context.mounted) return;
 
@@ -142,28 +212,6 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (nomesFontes.isNotEmpty) ...[
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Fontes anteriores:',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: nomesFontes.map((nome) {
-                    return ActionChip(
-                      label: Text(nome),
-                      onPressed: () {
-                        nomeController.text = nome;
-                      },
-                    );
-                  }).toList(),
-                ),
-                const SizedBox(height: 16),
-              ],
               TextField(
                 controller: nomeController,
                 decoration: const InputDecoration(
@@ -281,25 +329,25 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
     );
   }
 
-  Future<void> _showDeleteConfirmation(
+  Future<bool?> _showDeleteConfirmation(
     BuildContext context,
     ExpenseProvider provider,
     FonteRenda receita,
   ) async {
-    showDialog(
+    final confirmado = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Excluir Receita'),
         content: Text('Deseja realmente excluir "${receita.nome}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
             onPressed: () {
               provider.deletarFonteRenda(receita.id!);
-              Navigator.pop(context);
+              Navigator.pop(context, true);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.secondaryColor,
@@ -310,6 +358,7 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
         ],
       ),
     );
+    return confirmado;
   }
 
   Future<void> _showCopiarReceitasDialog(BuildContext context) async {
