@@ -48,123 +48,229 @@ class CategoriasScreen extends StatelessWidget {
         ? (gasto / categoria.limiteGasto!) * 100
         : 0.0;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Dismissible(
+      key: Key('categoria_${categoria.id}'),
+      direction: categoria.isPadrao
+          ? DismissDirection
+                .horizontal // Permite swipe em ambas direções para categorias padrão (só editar)
+          : DismissDirection
+                .horizontal, // Permite swipe em ambas direções para categorias customizadas
+      confirmDismiss: (direction) async {
+        // Para categorias padrão, só permite editar (swipe esquerda)
+        if (categoria.isPadrao) {
+          if (direction == DismissDirection.endToStart) {
+            _showEditCategoriaDialog(context, categoria);
+            return false; // Não remove o item
+          }
+          return false; // Não remove o item em nenhum caso
+        }
+
+        // Para categorias customizadas
+        if (direction == DismissDirection.startToEnd) {
+          // Swipe para direita = Editar
+          _showEditCategoriaDialog(context, categoria);
+          return false; // Não remove o item
+        } else if (direction == DismissDirection.endToStart) {
+          // Swipe para esquerda = Remover
+          return await _showDeleteConfirmation(context, provider, categoria);
+        }
+        return false;
+      },
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.accentColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: EdgeInsets.only(left: 20),
+            child: Row(
               children: [
-                Text(categoria.icone, style: const TextStyle(fontSize: 32)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                Icon(Icons.edit, color: Colors.white, size: 28),
+                SizedBox(width: 12),
+                Text(
+                  'Editar',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      secondaryBackground: categoria.isPadrao
+          ? Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: AppTheme.accentColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: EdgeInsets.only(right: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Text(
-                        categoria.nome,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      if (temLimite)
-                        Text(
-                          'Limite: ${Formatters.formatCurrency(categoria.limiteGasto!)}',
-                          style: Theme.of(context).textTheme.bodySmall,
+                        'Editar',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
+                      ),
+                      SizedBox(width: 12),
+                      Icon(Icons.edit, color: Colors.white, size: 28),
                     ],
                   ),
                 ),
-                if (!categoria.isPadrao)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+              ),
+            )
+          : Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: AppTheme.secondaryColor,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Align(
+                alignment: Alignment.centerRight,
+                child: Padding(
+                  padding: EdgeInsets.only(right: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.edit,
-                          color: AppTheme.accentColor,
-                        ),
-                        onPressed: () =>
-                            _showEditCategoriaDialog(context, categoria),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.delete,
-                          color: AppTheme.secondaryColor,
-                        ),
-                        onPressed: () => _showDeleteConfirmation(
-                          context,
-                          provider,
-                          categoria,
+                      Text(
+                        'Remover',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
+                      SizedBox(width: 12),
+                      Icon(Icons.delete, color: Colors.white, size: 28),
                     ],
-                  )
-                else
-                  IconButton(
-                    icon: const Icon(Icons.edit, color: AppTheme.accentColor),
-                    onPressed: () =>
-                        _showEditCategoriaDialog(context, categoria),
                   ),
-              ],
+                ),
+              ),
             ),
-            if (temLimite) ...[
-              const SizedBox(height: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Gasto: ${Formatters.formatCurrency(gasto)}',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: percentual > 100
-                              ? AppTheme.secondaryColor
-                              : percentual > 80
-                              ? AppTheme.warningColor
-                              : AppTheme.textSecondary,
+                  Text(categoria.icone, style: const TextStyle(fontSize: 32)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          categoria.nome,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                      ),
-                      Text(
-                        '${percentual.toStringAsFixed(1)}%',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: percentual > 100
+                        if (temLimite)
+                          Text(
+                            'Limite: ${Formatters.formatCurrency(categoria.limiteGasto!)}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                      ],
+                    ),
+                  ),
+                  // Indicador visual de que pode fazer swipe
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.swipe,
+                          size: 16,
+                          color: AppTheme.primaryColor,
+                        ),
+                        const SizedBox(width: 4),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (temLimite) ...[
+                const SizedBox(height: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Gasto: ${Formatters.formatCurrency(gasto)}',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: percentual > 100
+                                    ? AppTheme.secondaryColor
+                                    : percentual > 80
+                                    ? AppTheme.warningColor
+                                    : AppTheme.textSecondary,
+                              ),
+                        ),
+                        Text(
+                          '${percentual.toStringAsFixed(1)}%',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: percentual > 100
+                                    ? AppTheme.secondaryColor
+                                    : percentual > 80
+                                    ? AppTheme.warningColor
+                                    : AppTheme.primaryColor,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: percentual > 100 ? 1.0 : percentual / 100,
+                        minHeight: 8,
+                        backgroundColor: AppTheme.cardDark,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          percentual > 100
                               ? AppTheme.secondaryColor
                               : percentual > 80
                               ? AppTheme.warningColor
                               : AppTheme.primaryColor,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: percentual > 100 ? 1.0 : percentual / 100,
-                      minHeight: 8,
-                      backgroundColor: AppTheme.cardDark,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        percentual > 100
-                            ? AppTheme.secondaryColor
-                            : percentual > 80
-                            ? AppTheme.warningColor
-                            : AppTheme.primaryColor,
-                      ),
                     ),
-                  ),
-                ],
-              ),
-            ] else if (gasto > 0) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Gasto: ${Formatters.formatCurrency(gasto)}',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+                  ],
+                ),
+              ] else if (gasto > 0) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Gasto: ${Formatters.formatCurrency(gasto)}',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -389,25 +495,25 @@ class CategoriasScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _showDeleteConfirmation(
+  Future<bool> _showDeleteConfirmation(
     BuildContext context,
     ExpenseProvider provider,
     Categoria categoria,
   ) async {
-    showDialog(
+    bool? result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Excluir Categoria'),
         content: Text('Deseja realmente excluir "${categoria.nome}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(context, false),
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
             onPressed: () {
               provider.deletarCategoria(categoria.id!);
-              Navigator.pop(context);
+              Navigator.pop(context, true);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.secondaryColor,
@@ -418,6 +524,7 @@ class CategoriasScreen extends StatelessWidget {
         ],
       ),
     );
+    return result ?? false;
   }
 
   Future<String?> _showIconePicker(BuildContext context) async {
