@@ -20,7 +20,8 @@ class ProximosVencimentosScreen extends StatelessWidget {
               .where((despesa) => despesa.diaVencimento != null)
               .toList();
 
-          // Filtrar despesas que ainda não venceram ou vencem hoje
+          // Filtrar apenas despesas que vencem após hoje (excluindo hoje)
+          final hojeNormalizado = DateTime(hoje.year, hoje.month, hoje.day);
           final proximasDespesas =
               despesasComVencimento.where((despesa) {
                   final vencimento = DateTime(
@@ -28,10 +29,7 @@ class ProximosVencimentosScreen extends StatelessWidget {
                     despesa.mes,
                     despesa.diaVencimento!,
                   );
-                  return vencimento.isAfter(hoje) ||
-                      (vencimento.year == hoje.year &&
-                          vencimento.month == hoje.month &&
-                          vencimento.day == hoje.day);
+                  return vencimento.isAfter(hojeNormalizado);
                 }).toList()
                 ..sort((a, b) => a.diaVencimento!.compareTo(b.diaVencimento!));
 
