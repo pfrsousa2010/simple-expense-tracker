@@ -7,6 +7,7 @@ import '../models/categoria.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/despesa_item.dart';
+import '../widgets/dia_vencimento_selector_simples.dart';
 import 'copiar_despesas_fixas_screen.dart';
 
 class DespesasScreen extends StatefulWidget {
@@ -313,23 +314,9 @@ class _DespesasScreenState extends State<DespesasScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<int>(
+                  // Seletor de dia do vencimento
+                  DiaVencimentoSelectorSimples(
                     initialValue: diaVencimento,
-                    decoration: const InputDecoration(
-                      labelText: 'Dia do Vencimento (Opcional)',
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text('Sem vencimento'),
-                      ),
-                      ...List.generate(31, (i) => i + 1).map((dia) {
-                        return DropdownMenuItem(
-                          value: dia,
-                          child: Text('Dia $dia'),
-                        );
-                      }),
-                    ],
                     onChanged: (value) {
                       setDialogState(() {
                         diaVencimento = value;
@@ -480,23 +467,9 @@ class _DespesasScreenState extends State<DespesasScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  DropdownButtonFormField<int>(
+                  // Seletor de dia do vencimento
+                  DiaVencimentoSelectorSimples(
                     initialValue: diaVencimento,
-                    decoration: const InputDecoration(
-                      labelText: 'Dia do Vencimento (Opcional)',
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text('Sem vencimento'),
-                      ),
-                      ...List.generate(31, (i) => i + 1).map((dia) {
-                        return DropdownMenuItem(
-                          value: dia,
-                          child: Text('Dia $dia'),
-                        );
-                      }),
-                    ],
                     onChanged: (value) {
                       setDialogState(() {
                         diaVencimento = value;

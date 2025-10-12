@@ -255,16 +255,35 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    await _notifications.zonedSchedule(
-      despesa.id ?? 0,
-      'Vencimento Amanhã! 💰',
-      '${despesa.descricao} - R\$ ${despesa.valor.toStringAsFixed(2)}',
-      scheduledDate,
-      details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-    );
+    try {
+      await _notifications.zonedSchedule(
+        despesa.id ?? 0,
+        'Vencimento Amanhã! 💰',
+        '${despesa.descricao} - R\$ ${despesa.valor.toStringAsFixed(2)}',
+        scheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    } catch (e) {
+      // Se falhar com notificação exata, tenta com modo menos restritivo
+      try {
+        await _notifications.zonedSchedule(
+          despesa.id ?? 0,
+          'Vencimento Amanhã! 💰',
+          '${despesa.descricao} - R\$ ${despesa.valor.toStringAsFixed(2)}',
+          scheduledDate,
+          details,
+          androidScheduleMode: AndroidScheduleMode.exact, // Menos restritivo
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+      } catch (e2) {
+        // Se ainda falhar, ignora silenciosamente
+        print('Não foi possível agendar notificação: $e2');
+      }
+    }
   }
 
   Future<void> cancelarNotificacao(int despesaId) async {

@@ -140,7 +140,7 @@ class ExpenseProvider with ChangeNotifier {
   Future<void> atualizarDespesa(Despesa despesa) async {
     await _db.updateDespesa(despesa);
 
-    // Reagendar notificação
+    // Reagendar notificação (apenas se tiver permissões)
     if (despesa.id != null) {
       try {
         await _notification.cancelarNotificacao(despesa.id!);
@@ -148,8 +148,12 @@ class ExpenseProvider with ChangeNotifier {
           await _notification.agendarNotificacaoVencimento(despesa);
         }
       } catch (e) {
-        print('Erro ao reagendar notificação: $e');
-        // Continua mesmo se a notificação falhar
+        // Silenciosamente ignora erros de notificação para não interromper o fluxo
+        if (kDebugMode) {
+          print(
+            'Notificação não foi reagendada (pode ser falta de permissão): $e',
+          );
+        }
       }
     }
 
