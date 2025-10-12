@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -227,57 +228,121 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             // Botão Vencendo Hoje
             Expanded(
-              child: Card(
-                elevation: 2,
-                color: despesasHoje > 0 ? Colors.orange[50] : null,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const VencendoHojeScreen(),
-                      ),
-                    );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.alarm,
-                          size: 40,
-                          color: despesasHoje > 0 ? Colors.orange : Colors.grey,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: despesasHoje > 0
+                        ? [
+                            const Color(0xFFFF6B35).withOpacity(0.15),
+                            const Color(0xFFFF6B35).withOpacity(0.05),
+                          ]
+                        : [
+                            Colors.grey.withOpacity(0.1),
+                            Colors.grey.withOpacity(0.05),
+                          ],
+                  ),
+                  border: Border.all(
+                    color: despesasHoje > 0
+                        ? const Color(0xFFFF6B35).withOpacity(0.3)
+                        : Colors.grey.withOpacity(0.2),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: despesasHoje > 0
+                          ? const Color(0xFFFF6B35).withOpacity(0.2)
+                          : Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                      spreadRadius: 0,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const VencendoHojeScreen(),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Hoje',
-                          style: Theme.of(context).textTheme.titleMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.warning_rounded,
+                            size: 40,
                             color: despesasHoje > 0
-                                ? Colors.orange
-                                : Colors.grey[300],
-                            borderRadius: BorderRadius.circular(12),
+                                ? const Color(0xFFFF6B35)
+                                : Colors.grey[400],
                           ),
-                          child: Text(
-                            '$despesasHoje',
-                            style: TextStyle(
-                              color: despesasHoje > 0
-                                  ? Colors.white
-                                  : Colors.grey[700],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          const SizedBox(height: 12),
+                          Text(
+                            'Hoje',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: despesasHoje > 0
+                                    ? [
+                                        const Color(
+                                          0xFFFF6B35,
+                                        ).withOpacity(0.2),
+                                        const Color(
+                                          0xFFFF6B35,
+                                        ).withOpacity(0.1),
+                                      ]
+                                    : [
+                                        Colors.grey.withOpacity(0.2),
+                                        Colors.grey.withOpacity(0.1),
+                                      ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: despesasHoje > 0
+                                    ? const Color(0xFFFF6B35).withOpacity(0.3)
+                                    : Colors.grey.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              '$despesasHoje',
+                              style: TextStyle(
+                                color: despesasHoje > 0
+                                    ? const Color(0xFFFF6B35)
+                                    : Colors.grey[600],
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -286,58 +351,121 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(width: 12),
             // Botão Próximos Vencimentos
             Expanded(
-              child: Card(
-                elevation: 2,
-                child: InkWell(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ProximosVencimentosScreen(),
-                      ),
-                    );
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.event,
-                          size: 40,
-                          color: proximosVencimentos > 0
-                              ? Colors.blue
-                              : Colors.grey,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: proximosVencimentos > 0
+                        ? [
+                            const Color(0xFF3498DB).withOpacity(0.15),
+                            const Color(0xFF3498DB).withOpacity(0.05),
+                          ]
+                        : [
+                            Colors.grey.withOpacity(0.1),
+                            Colors.grey.withOpacity(0.05),
+                          ],
+                  ),
+                  border: Border.all(
+                    color: proximosVencimentos > 0
+                        ? const Color(0xFF3498DB).withOpacity(0.3)
+                        : Colors.grey.withOpacity(0.2),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: proximosVencimentos > 0
+                          ? const Color(0xFF3498DB).withOpacity(0.2)
+                          : Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                      spreadRadius: 0,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ProximosVencimentosScreen(),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Próximos',
-                          style: Theme.of(context).textTheme.titleMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            size: 40,
                             color: proximosVencimentos > 0
-                                ? Colors.blue
-                                : Colors.grey[300],
-                            borderRadius: BorderRadius.circular(12),
+                                ? const Color(0xFF3498DB)
+                                : Colors.grey[400],
                           ),
-                          child: Text(
-                            '$proximosVencimentos',
-                            style: TextStyle(
-                              color: proximosVencimentos > 0
-                                  ? Colors.white
-                                  : Colors.grey[700],
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                          const SizedBox(height: 12),
+                          Text(
+                            'Próximos',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: proximosVencimentos > 0
+                                    ? [
+                                        const Color(
+                                          0xFF3498DB,
+                                        ).withOpacity(0.2),
+                                        const Color(
+                                          0xFF3498DB,
+                                        ).withOpacity(0.1),
+                                      ]
+                                    : [
+                                        Colors.grey.withOpacity(0.2),
+                                        Colors.grey.withOpacity(0.1),
+                                      ],
+                              ),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: proximosVencimentos > 0
+                                    ? const Color(0xFF3498DB).withOpacity(0.3)
+                                    : Colors.grey.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              '$proximosVencimentos',
+                              style: TextStyle(
+                                color: proximosVencimentos > 0
+                                    ? const Color(0xFF3498DB)
+                                    : Colors.grey[600],
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

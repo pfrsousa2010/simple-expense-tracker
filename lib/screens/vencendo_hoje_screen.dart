@@ -89,7 +89,7 @@ class VencendoHojeScreen extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                       colors: [
-                        const Color(0xFFFF6B35).withOpacity(0.15),
+                        const Color(0xFFFF6B35).withOpacity(0.05),
                         const Color(0xFFFF6B35).withOpacity(0.05),
                       ],
                     ),
@@ -112,95 +112,85 @@ class VencendoHojeScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Column(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 16,
-                              ),
-                              child: Column(
-                                children: despesasDoGrupo.asMap().entries.map((
-                                  entry,
-                                ) {
-                                  final despesaIndex = entry.key;
-                                  final despesa = entry.value;
-                                  final categoria = provider.categorias
-                                      .firstWhere(
-                                        (cat) => cat.id == despesa.categoriaId,
-                                      );
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          child: Column(
+                            children: despesasDoGrupo.asMap().entries.map((
+                              entry,
+                            ) {
+                              final despesaIndex = entry.key;
+                              final despesa = entry.value;
+                              final categoria = provider.categorias.firstWhere(
+                                (cat) => cat.id == despesa.categoriaId,
+                              );
 
-                                  return Padding(
-                                    padding: EdgeInsets.only(
-                                      bottom:
-                                          despesaIndex <
-                                              despesasDoGrupo.length - 1
-                                          ? 12
-                                          : 0,
-                                    ),
-                                    child: DespesaItem(
-                                      despesa: despesa,
-                                      categoria: categoria,
-                                      showSwipeIcon: false,
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
-                            ),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    const Color(0xFFFF6B35).withOpacity(0.2),
-                                    const Color(0xFFFF6B35).withOpacity(0.1),
-                                  ],
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  bottom:
+                                      despesaIndex < despesasDoGrupo.length - 1
+                                      ? 12
+                                      : 0,
                                 ),
-                                border: Border(
-                                  top: BorderSide(
-                                    color: const Color(
-                                      0xFFFF6B35,
-                                    ).withOpacity(0.3),
-                                    width: 1,
-                                  ),
+                                child: DespesaItem(
+                                  despesa: despesa,
+                                  categoria: categoria,
+                                  showSwipeIcon: false,
                                 ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.warning_rounded,
-                                    color: const Color(0xFFFF6B35),
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Vence hoje!',
-                                    style: TextStyle(
-                                      color: const Color(0xFFFF6B35),
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                              );
+                            }).toList(),
+                          ),
                         ),
-                      ),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFFFF6B35).withOpacity(0.2),
+                                const Color(0xFFFF6B35).withOpacity(0.1),
+                              ],
+                            ),
+                            border: Border(
+                              top: BorderSide(
+                                color: const Color(0xFFFF6B35).withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.warning_rounded,
+                                color: const Color(0xFFFF6B35),
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Vence hoje!',
+                                style: TextStyle(
+                                  color: const Color(0xFFFF6B35),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'providers/expense_provider.dart';
 import 'screens/home_screen.dart';
+import 'services/notification_service.dart';
 import 'utils/app_theme.dart';
 
 void main() async {
@@ -12,6 +13,14 @@ void main() async {
 
   // Inicializar formatação de datas em português
   await initializeDateFormatting('pt_BR', null);
+
+  // Inicializar serviço de notificações
+  final notificationService = NotificationService.instance;
+  await notificationService.initialize();
+  await notificationService.requestPermissions();
+
+  // Agendar notificações diárias de vencimentos
+  await notificationService.agendarNotificacoesDiarias();
 
   // Configurar orientação apenas para portrait
   await SystemChrome.setPreferredOrientations([

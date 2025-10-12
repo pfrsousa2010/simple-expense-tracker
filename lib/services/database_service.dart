@@ -206,6 +206,15 @@ class DatabaseService {
     return result.map((map) => Despesa.fromMap(map)).toList();
   }
 
+  Future<List<Despesa>> buscarTodasDespesas() async {
+    final db = await instance.database;
+    final result = await db.query(
+      'despesas',
+      orderBy: 'ano DESC, mes DESC, diaVencimento ASC',
+    );
+    return result.map((map) => Despesa.fromMap(map)).toList();
+  }
+
   Future<double> getTotalGastosPorCategoria(
     int categoriaId,
     int mes,
