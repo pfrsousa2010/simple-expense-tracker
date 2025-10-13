@@ -1,8 +1,112 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:workmanager/workmanager.dart';
 import '../models/despesa.dart';
 import '../services/database_service.dart';
+
+// Callback que será executada em background pelo Workmanager
+@pragma('vm:entry-point')
+void callbackDispatcher() {
+  Workmanager().executeTask((task, inputData) async {
+    try {
+      // Inicializar timezone
+      tz.initializeTimeZones();
+      tz.setLocalLocation(tz.getLocation('America/Sao_Paulo'));
+
+      // Inicializar notificações
+      final notifications = FlutterLocalNotificationsPlugin();
+      const androidSettings = AndroidInitializationSettings(
+        '@mipmap/ic_launcher',
+      );
+      const iosSettings = DarwinInitializationSettings();
+      const settings = InitializationSettings(
+        android: androidSettings,
+        iOS: iosSettings,
+      );
+      await notifications.initialize(settings);
+
+      // Verificar vencimentos e enviar notificações
+      await _verificarVencimentosBackground(notifications);
+
+      return Future.value(true);
+    } catch (e) {
+      print('Erro no background task: $e');
+      return Future.value(false);
+    }
+  });
+}
+
+// Função auxiliar para verificar vencimentos em background
+Future<void> _verificarVencimentosBackground(
+  FlutterLocalNotificationsPlugin notifications,
+) async {
+  final db = DatabaseService.instance;
+  final hoje = DateTime.now();
+  final hojeNormalizado = DateTime(hoje.year, hoje.month, hoje.day);
+  final amanhaNormalizado = hojeNormalizado.add(const Duration(days: 1));
+
+  // Buscar todas as despesas
+  final todasDespesas = await db.buscarTodasDespesas();
+
+  // Filtrar despesas vencendo hoje (não pagas)
+  final despesasHoje = todasDespesas.where((despesa) {
+    if (despesa.status == StatusPagamento.pago || despesa.diaVencimento == null)
+      return false;
+    return despesa.ano == hoje.year &&
+        despesa.mes == hoje.month &&
+        despesa.diaVencimento == hoje.day;
+  }).toList();
+
+  // Filtrar despesas vencendo amanhã (não pagas)
+  final despesasAmanha = todasDespesas.where((despesa) {
+    if (despesa.status == StatusPagamento.pago || despesa.diaVencimento == null)
+      return false;
+    return despesa.ano == amanhaNormalizado.year &&
+        despesa.mes == amanhaNormalizado.month &&
+        despesa.diaVencimento == amanhaNormalizado.day;
+  }).toList();
+
+  const androidDetails = AndroidNotificationDetails(
+    'vencimentos_diarios',
+    'Vencimentos Diários',
+    channelDescription: 'Notificações diárias de vencimento de despesas',
+    importance: Importance.high,
+    priority: Priority.high,
+    icon: '@mipmap/ic_launcher',
+  );
+
+  const iosDetails = DarwinNotificationDetails(
+    presentAlert: true,
+    presentBadge: true,
+    presentSound: true,
+  );
+
+  const details = NotificationDetails(android: androidDetails, iOS: iosDetails);
+
+  // Enviar notificação para hoje (se houver despesas)
+  if (despesasHoje.isNotEmpty) {
+    final texto = despesasHoje.length == 1
+        ? 'Hoje vence 1 conta'
+        : 'Hoje vencem ${despesasHoje.length} contas';
+
+    await notifications.show(999999, '⏰ Contas Vencendo Hoje', texto, details);
+  }
+
+  // Enviar notificação para amanhã (se houver despesas)
+  if (despesasAmanha.isNotEmpty) {
+    final texto = despesasAmanha.length == 1
+        ? 'Amanhã vence 1 conta'
+        : 'Amanhã vencem ${despesasAmanha.length} contas';
+
+    await notifications.show(
+      999998,
+      '📅 Contas Vencendo Amanhã',
+      texto,
+      details,
+    );
+  }
+}
 
 class NotificationService {
   static final NotificationService instance = NotificationService._init();
@@ -44,6 +148,8 @@ class NotificationService {
 
     if (androidPlugin != null) {
       await androidPlugin.requestNotificationsPermission();
+      // Solicitar permissão para alarmes exatos (necessário para Android 12+)
+      await androidPlugin.requestExactAlarmsPermission();
     }
 
     final iosPlugin = _notifications
@@ -62,15 +168,39 @@ class NotificationService {
     await _notifications.cancel(_notificacaoHojeId);
     await _notifications.cancel(_notificacaoAmanhaId);
 
-    // Agendar para amanhã às 09h (e se repetir diariamente)
-    await _agendarVerificacaoVencimentos();
+    // Inicializar Workmanager
+    await Workmanager().initialize(
+      callbackDispatcher,
+      isInDebugMode: false, // Mude para true se quiser ver logs de debug
+    );
+
+    // Cancelar tarefas anteriores
+    await Workmanager().cancelAll();
+
+    // Agendar tarefa periódica diária às 09h
+    // Nota: O Workmanager no Android não garante execução exata às 9h,
+    // mas tenta executar próximo a esse horário
+    await Workmanager().registerPeriodicTask(
+      'verificar_vencimentos_diarios',
+      'verificarVencimentos',
+      frequency: const Duration(hours: 24),
+      initialDelay: _calcularDelayAte9h(),
+      constraints: Constraints(
+        networkType: NetworkType.notRequired,
+        requiresBatteryNotLow: false,
+        requiresCharging: false,
+        requiresDeviceIdle: false,
+        requiresStorageNotLow: false,
+      ),
+    );
+
+    // Também verifica imediatamente ao abrir o app
+    await verificarVencimentosAgora();
   }
 
-  /// Agenda a verificação e envio de notificações de vencimentos
-  Future<void> _agendarVerificacaoVencimentos() async {
+  /// Calcula o delay até as próximas 9h
+  Duration _calcularDelayAte9h() {
     final now = DateTime.now();
-
-    // Próxima execução às 09h
     DateTime nextRun = DateTime(now.year, now.month, now.day, 9, 0);
 
     // Se já passou das 09h hoje, agendar para amanhã
@@ -78,21 +208,7 @@ class NotificationService {
       nextRun = nextRun.add(const Duration(days: 1));
     }
 
-    final scheduledDate = tz.TZDateTime.from(nextRun, tz.local);
-
-    // Verificar e enviar notificações
-    await _verificarENotificarVencimentos();
-
-    // Agendar próxima verificação (amanhã às 09h)
-    _agendarProximaVerificacao(scheduledDate);
-  }
-
-  /// Agenda a próxima verificação diária
-  void _agendarProximaVerificacao(tz.TZDateTime scheduledDate) {
-    // Nota: Para notificações diárias recorrentes verdadeiras, seria necessário
-    // usar um plugin adicional como android_alarm_manager_plus ou workmanager.
-    // Por enquanto, as notificações são verificadas cada vez que o app é aberto.
-    // Uma solução mais robusta exigiria um serviço em background.
+    return nextRun.difference(now);
   }
 
   /// Verifica despesas vencendo hoje e amanhã e envia notificações

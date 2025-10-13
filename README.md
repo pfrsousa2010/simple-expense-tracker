@@ -40,10 +40,12 @@ Um aplicativo moderno e intuitivo para gerenciar suas receitas e despesas mensai
 - ✅ Códigos de cor por urgência de vencimento
 
 ### 🔔 Notificações
-- ✅ Notificações diárias automáticas às 09:00
-- ✅ Lista de despesas vencendo no dia
-- ✅ Agendamento automático ao adicionar/editar despesas
+- ✅ **Notificações em Background** - Funciona mesmo com o app fechado
+- ✅ **Notificações diárias automáticas às 09:00** - Verifica despesas vencendo hoje e amanhã
+- ✅ **Execução independente** - Não precisa abrir o app diariamente
+- ✅ Sistema de tarefas periódicas com WorkManager
 - ✅ Solicitação de permissões no primeiro uso
+- ✅ Compatível com otimização de bateria do Android
 
 ## 🎨 Design
 
@@ -126,6 +128,7 @@ flutter pub run flutter_launcher_icons
 - **sqflite** (^2.3.0) - Banco de dados local SQLite
 - **provider** (^6.1.1) - Gerenciamento de estado
 - **flutter_local_notifications** (^17.0.0) - Notificações locais
+- **workmanager** (^0.9.0) - Tarefas em background/notificações periódicas
 - **intl** (^0.20.2) - Formatação de datas e moeda em pt-BR
 - **timezone** (^0.9.2) - Gerenciamento de timezones para notificações
 - **flutter_iconpicker** (^3.2.4) - Seletor de ícones emoji para categorias
@@ -167,21 +170,39 @@ lib/
 
 ## 🔔 Sistema de Notificações
 
-O aplicativo possui um sistema robusto de notificações para lembrá-lo dos vencimentos:
+O aplicativo possui um sistema robusto de notificações em background que funciona **mesmo com o app fechado**:
 
-### Notificações Diárias
-- **Horário:** Todos os dias às 09:00
-- **Conteúdo:** Lista de todas as despesas com vencimento no dia atual
-- **Agendamento:** Automático na inicialização do app
+### Notificações Diárias Automáticas
+- **Horário:** Todos os dias às 09:00 da manhã
+- **Conteúdo:** 
+  - Despesas vencendo **hoje** (se houver)
+  - Despesas vencendo **amanhã** (se houver)
+- **Tecnologia:** WorkManager para execução em background
+- **Funcionamento:** Completamente automático, não precisa abrir o app
 
 ### Como funciona
-1. Ao abrir o app pela primeira vez, solicita permissão para notificações
-2. Notificações são agendadas automaticamente quando você:
-   - Adiciona uma nova despesa com vencimento
-   - Edita uma despesa existente
-   - Copia despesas fixas para outro mês
-3. Todos os dias às 09:00, você recebe uma notificação com as despesas do dia
-4. Clique na notificação para ver os detalhes no app
+1. **Primeira vez:** Ao abrir o app, solicita permissões necessárias
+2. **Agendamento:** Task periódica é configurada automaticamente
+3. **Execução diária:** Todos os dias às ~09:00, o sistema:
+   - Verifica despesas vencendo hoje e amanhã
+   - Envia notificações apenas se houver despesas pendentes
+   - Funciona mesmo com o app completamente fechado
+4. **Inteligente:** Só notifica se existirem contas a pagar
+
+### ⚙️ Configuração Importante
+
+Para garantir que as notificações funcionem em background:
+
+1. **Desative a otimização de bateria** para este app
+2. **Permita execução em segundo plano**
+3. **Ative notificações** nas configurações do sistema
+
+> 📖 **Veja o arquivo [NOTIFICACOES.md](NOTIFICACOES.md)** para instruções detalhadas sobre como configurar seu dispositivo Android (especialmente Xiaomi, Samsung, Huawei, OnePlus)
+
+### Limitações do Android
+- Android 12+ pode atrasar notificações para economizar bateria
+- Fabricantes como Xiaomi/Huawei têm otimizações agressivas que podem bloquear
+- O horário de 09:00 é aproximado, pode variar alguns minutos/horas
 
 ## 💾 Persistência de Dados
 
@@ -256,8 +277,9 @@ Ao instalar o app pela primeira vez, as seguintes categorias são criadas automa
 
 ## 🐛 Problemas Conhecidos
 
-- Notificações podem não funcionar em alguns dispositivos com otimização agressiva de bateria
+- **Notificações em background:** Alguns fabricantes (Xiaomi, Huawei, OnePlus) têm otimização agressiva de bateria que pode bloquear notificações. Consulte o arquivo [NOTIFICACOES.md](NOTIFICACOES.md) para configurar corretamente
 - Em alguns casos, o banco de dados precisa ser reinicializado após updates
+- O horário exato das notificações (09:00) pode variar dependendo do dispositivo e otimizações do sistema
 
 ## 📄 Licença
 
