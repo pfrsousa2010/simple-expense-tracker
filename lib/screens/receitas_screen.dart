@@ -5,6 +5,7 @@ import '../providers/expense_provider.dart';
 import '../models/fonte_renda.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
+import 'copiar_receitas_screen.dart';
 
 class ReceitasScreen extends StatefulWidget {
   const ReceitasScreen({super.key});
@@ -23,7 +24,12 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
           IconButton(
             icon: const Icon(Icons.copy_all),
             tooltip: 'Copiar receitas do mês anterior',
-            onPressed: () => _showCopiarReceitasDialog(context),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const CopiarReceitasScreen()),
+              );
+            },
           ),
         ],
       ),
@@ -359,137 +365,5 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
       ),
     );
     return confirmado;
-  }
-
-  Future<void> _showCopiarReceitasDialog(BuildContext context) async {
-    final provider = context.read<ExpenseProvider>();
-
-    // Buscar receitas do mês anterior
-    final mesAnterior = DateTime(
-      provider.mesAtual.year,
-      provider.mesAtual.month - 1,
-    );
-
-    final receitasMesAnterior = await provider.getFontesRendaMes(
-      mesAnterior.month,
-      mesAnterior.year,
-    );
-
-    if (!context.mounted) return;
-
-    if (receitasMesAnterior.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Não há receitas em ${Formatters.formatMonthShort(mesAnterior)} para copiar.',
-          ),
-          backgroundColor: AppTheme.warningColor,
-        ),
-      );
-      return;
-    }
-
-    // Map para controlar quais receitas estão selecionadas
-    final Map<int, bool> receitasSelecionadas = {};
-    for (var receita in receitasMesAnterior) {
-      receitasSelecionadas[receita.id!] =
-          true; // Por padrão, todas selecionadas
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: const Text('Copiar Receitas'),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Selecione as receitas de ${Formatters.formatMonthShort(mesAnterior)} para copiar:',
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Receitas encontradas:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  ...receitasMesAnterior.map((receita) {
-                    return CheckboxListTile(
-                      value: receitasSelecionadas[receita.id!] ?? false,
-                      onChanged: (value) {
-                        setDialogState(() {
-                          receitasSelecionadas[receita.id!] = value ?? false;
-                        });
-                      },
-                      title: Text(receita.nome),
-                      subtitle: Text(
-                        Formatters.formatCurrency(receita.valor),
-                        style: const TextStyle(
-                          color: AppTheme.primaryColor,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      activeColor: AppTheme.primaryColor,
-                      contentPadding: EdgeInsets.zero,
-                    );
-                  }),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  final receitasParaCopiar = receitasMesAnterior
-                      .where(
-                        (receita) => receitasSelecionadas[receita.id!] == true,
-                      )
-                      .toList();
-
-                  if (receitasParaCopiar.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Selecione pelo menos uma receita para copiar.',
-                        ),
-                        backgroundColor: AppTheme.warningColor,
-                      ),
-                    );
-                    return;
-                  }
-
-                  for (var receita in receitasParaCopiar) {
-                    final novaReceita = FonteRenda(
-                      nome: receita.nome,
-                      valor: receita.valor,
-                      mes: provider.mesAtual.month,
-                      ano: provider.mesAtual.year,
-                    );
-                    provider.adicionarFonteRenda(novaReceita);
-                  }
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${receitasParaCopiar.length} receita(s) copiada(s) com sucesso!',
-                      ),
-                      backgroundColor: AppTheme.primaryColor,
-                    ),
-                  );
-                },
-                child: const Text('Copiar Selecionadas'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
   }
 }
