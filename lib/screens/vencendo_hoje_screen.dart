@@ -1,8 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
 import '../widgets/despesa_item.dart';
+import 'editar_despesa_screen.dart';
 
 class VencendoHojeScreen extends StatelessWidget {
   const VencendoHojeScreen({super.key});
@@ -145,6 +145,16 @@ class VencendoHojeScreen extends StatelessWidget {
                                   despesa: despesa,
                                   categoria: categoria,
                                   showSwipeIcon: false,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => EditarDespesaScreen(
+                                          despesa: despesa,
+                                        ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               );
                             }).toList(),

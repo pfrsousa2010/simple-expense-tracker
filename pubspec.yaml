@@ -57,6 +57,10 @@ dependencies:
   
   # Ícones
   flutter_iconpicker: ^3.2.4
+  
+  # Importar/Exportar dados
+  file_picker: ^8.1.2
+  share_plus: ^10.1.2
 
 dev_dependencies:
   flutter_test:

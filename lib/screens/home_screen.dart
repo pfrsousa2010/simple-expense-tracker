@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -12,6 +11,7 @@ import 'despesas_screen.dart';
 import 'categorias_screen.dart';
 import 'vencendo_hoje_screen.dart';
 import 'proximos_vencimentos_screen.dart';
+import 'configuracoes_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -42,6 +42,15 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const CategoriasScreen()),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ConfiguracoesScreen()),
               );
             },
           ),
@@ -205,7 +214,8 @@ class _HomeScreenState extends State<HomeScreen> {
           vencimento.day == hoje.day;
     }).length;
 
-    // Contar próximos vencimentos do mês
+    // Contar próximos vencimentos do mês (apenas após hoje, excluindo hoje)
+    final hojeNormalizado = DateTime(hoje.year, hoje.month, hoje.day);
     final proximosVencimentos = provider.despesas.where((despesa) {
       if (despesa.diaVencimento == null) return false;
       final vencimento = DateTime(
@@ -213,10 +223,12 @@ class _HomeScreenState extends State<HomeScreen> {
         despesa.mes,
         despesa.diaVencimento!,
       );
-      return vencimento.isAfter(hoje) ||
-          (vencimento.year == hoje.year &&
-              vencimento.month == hoje.month &&
-              vencimento.day == hoje.day);
+      final vencimentoNormalizado = DateTime(
+        vencimento.year,
+        vencimento.month,
+        vencimento.day,
+      );
+      return vencimentoNormalizado.isAfter(hojeNormalizado);
     }).length;
 
     return Column(

@@ -7,8 +7,9 @@ import '../models/categoria.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/despesa_item.dart';
-import '../widgets/dia_vencimento_selector_simples.dart';
 import 'copiar_despesas_fixas_screen.dart';
+import 'adicionar_despesa_screen.dart';
+import 'editar_despesa_screen.dart';
 
 class DespesasScreen extends StatefulWidget {
   const DespesasScreen({super.key});
@@ -89,7 +90,12 @@ class _DespesasScreenState extends State<DespesasScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddDespesaDialog(context),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AdicionarDespesaScreen()),
+          );
+        },
         backgroundColor: AppTheme.secondaryColor,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
@@ -155,7 +161,12 @@ class _DespesasScreenState extends State<DespesasScreen> {
       confirmDismiss: (direction) async {
         if (direction == DismissDirection.startToEnd) {
           // Swipe para direita = Editar
-          _showEditDespesaDialog(context, despesa);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => EditarDespesaScreen(despesa: despesa),
+            ),
+          );
           return false; // Não remove o item
         } else if (direction == DismissDirection.endToStart) {
           // Swipe para esquerda = Remover
@@ -223,304 +234,15 @@ class _DespesasScreenState extends State<DespesasScreen> {
         child: DespesaItem(
           despesa: despesa,
           categoria: categoria,
-          onTap: () => _showEditDespesaDialog(context, despesa),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => EditarDespesaScreen(despesa: despesa),
+              ),
+            );
+          },
         ),
-      ),
-    );
-  }
-
-  Future<void> _showAddDespesaDialog(BuildContext context) async {
-    final provider = context.read<ExpenseProvider>();
-    final descricaoController = TextEditingController();
-    final valorController = TextEditingController();
-    Categoria? categoriaSelecionada;
-    int? diaVencimento;
-    StatusPagamento statusSelecionado = StatusPagamento.aPagar;
-    bool isFixa = false;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: const Text('Adicionar Despesa'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: descricaoController,
-                    decoration: const InputDecoration(
-                      labelText: 'Descrição',
-                      hintText: 'Ex: Conta de luz',
-                    ),
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: valorController,
-                    decoration: const InputDecoration(
-                      labelText: 'Valor',
-                      prefixText: 'R\$ ',
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                        RegExp(r'^\d+\.?\d{0,2}'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<Categoria>(
-                    initialValue: categoriaSelecionada,
-                    decoration: const InputDecoration(labelText: 'Categoria'),
-                    items: provider.categorias.map((cat) {
-                      return DropdownMenuItem(
-                        value: cat,
-                        child: Row(
-                          children: [
-                            Text(
-                              cat.icone,
-                              style: const TextStyle(fontSize: 20),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(cat.nome),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setDialogState(() {
-                        categoriaSelecionada = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<StatusPagamento>(
-                    initialValue: statusSelecionado,
-                    decoration: const InputDecoration(labelText: 'Status'),
-                    items: StatusPagamento.values.map((status) {
-                      return DropdownMenuItem(
-                        value: status,
-                        child: Text(Formatters.getStatusText(status.index)),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setDialogState(() {
-                        statusSelecionado = value!;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  // Seletor de dia do vencimento
-                  DiaVencimentoSelectorSimples(
-                    initialValue: diaVencimento,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        diaVencimento = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  CheckboxListTile(
-                    value: isFixa,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        isFixa = value ?? false;
-                      });
-                    },
-                    title: const Text('Despesa Fixa'),
-                    subtitle: const Text('Pode ser reaproveitada mensalmente'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (descricaoController.text.isEmpty ||
-                      valorController.text.isEmpty ||
-                      categoriaSelecionada == null) {
-                    return;
-                  }
-
-                  final despesa = Despesa(
-                    descricao: descricaoController.text,
-                    valor: double.parse(valorController.text),
-                    categoriaId: categoriaSelecionada!.id!,
-                    mes: provider.mesAtual.month,
-                    ano: provider.mesAtual.year,
-                    diaVencimento: diaVencimento,
-                    status: statusSelecionado,
-                    isFixa: isFixa,
-                  );
-
-                  provider.adicionarDespesa(despesa);
-                  Navigator.pop(context);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.secondaryColor,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Adicionar'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  Future<void> _showEditDespesaDialog(
-    BuildContext context,
-    Despesa despesa,
-  ) async {
-    final provider = context.read<ExpenseProvider>();
-    final descricaoController = TextEditingController(text: despesa.descricao);
-    final valorController = TextEditingController(
-      text: despesa.valor.toString(),
-    );
-    Categoria? categoriaSelecionada = provider.categorias.firstWhere(
-      (cat) => cat.id == despesa.categoriaId,
-    );
-    int? diaVencimento = despesa.diaVencimento;
-    StatusPagamento statusSelecionado = despesa.status;
-    bool isFixa = despesa.isFixa;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          return AlertDialog(
-            title: const Text('Editar Despesa'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: descricaoController,
-                    decoration: const InputDecoration(labelText: 'Descrição'),
-                    textCapitalization: TextCapitalization.sentences,
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: valorController,
-                    decoration: const InputDecoration(
-                      labelText: 'Valor',
-                      prefixText: 'R\$ ',
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(
-                        RegExp(r'^\d+\.?\d{0,2}'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<Categoria>(
-                    initialValue: categoriaSelecionada,
-                    decoration: const InputDecoration(labelText: 'Categoria'),
-                    items: provider.categorias.map((cat) {
-                      return DropdownMenuItem(
-                        value: cat,
-                        child: Row(
-                          children: [
-                            Text(
-                              cat.icone,
-                              style: const TextStyle(fontSize: 20),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(cat.nome),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setDialogState(() {
-                        categoriaSelecionada = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<StatusPagamento>(
-                    initialValue: statusSelecionado,
-                    decoration: const InputDecoration(labelText: 'Status'),
-                    items: StatusPagamento.values.map((status) {
-                      return DropdownMenuItem(
-                        value: status,
-                        child: Text(Formatters.getStatusText(status.index)),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setDialogState(() {
-                        statusSelecionado = value!;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  // Seletor de dia do vencimento
-                  DiaVencimentoSelectorSimples(
-                    initialValue: diaVencimento,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        diaVencimento = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  CheckboxListTile(
-                    value: isFixa,
-                    onChanged: (value) {
-                      setDialogState(() {
-                        isFixa = value ?? false;
-                      });
-                    },
-                    title: const Text('Despesa Fixa'),
-                    subtitle: const Text('Pode ser reaproveitada mensalmente'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancelar'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (descricaoController.text.isEmpty ||
-                      valorController.text.isEmpty ||
-                      categoriaSelecionada == null) {
-                    return;
-                  }
-
-                  final despesaAtualizada = despesa.copyWith(
-                    descricao: descricaoController.text,
-                    valor: double.parse(valorController.text),
-                    categoriaId: categoriaSelecionada!.id!,
-                    diaVencimento: diaVencimento,
-                    status: statusSelecionado,
-                    isFixa: isFixa,
-                  );
-
-                  provider.atualizarDespesa(despesaAtualizada);
-                  Navigator.pop(context);
-                },
-                child: const Text('Salvar'),
-              ),
-            ],
-          );
-        },
       ),
     );
   }

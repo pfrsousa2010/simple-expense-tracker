@@ -113,12 +113,12 @@ class _CopiarDespesasFixasScreenState extends State<CopiarDespesasFixasScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Meses de Destino',
+                                  'Mês de Destino',
                                   style: Theme.of(context).textTheme.titleLarge
                                       ?.copyWith(fontWeight: FontWeight.bold),
                                 ),
                                 Text(
-                                  'Para onde copiar as despesas',
+                                  'Copiando despesas fixas de ${Formatters.formatMonthShort(mesAnterior)} para:',
                                   style: Theme.of(context).textTheme.bodyMedium
                                       ?.copyWith(color: AppTheme.textSecondary),
                                 ),
@@ -135,7 +135,10 @@ class _CopiarDespesasFixasScreenState extends State<CopiarDespesasFixasScreen> {
                         width: double.infinity,
                         child: OutlinedButton.icon(
                           onPressed: () async {
-                            final data = await _showMonthPicker(context);
+                            final data = await _showMonthPicker(
+                              context,
+                              mesAnterior,
+                            );
                             if (data != null) {
                               setState(() {
                                 // Adicionar mês se não existir
@@ -650,9 +653,15 @@ class _CopiarDespesasFixasScreenState extends State<CopiarDespesasFixasScreen> {
     }
   }
 
-  Future<DateTime?> _showMonthPicker(BuildContext context) async {
-    int anoSelecionado = DateTime.now().year;
-    int mesSelecionado = DateTime.now().month;
+  Future<DateTime?> _showMonthPicker(
+    BuildContext context,
+    DateTime mesReferencia,
+  ) async {
+    // Calcular o mês seguinte ao mês de referência
+    final mesSeguinte = DateTime(mesReferencia.year, mesReferencia.month + 1);
+
+    int anoSelecionado = mesSeguinte.year;
+    int mesSelecionado = mesSeguinte.month;
 
     final meses = [
       'Janeiro',

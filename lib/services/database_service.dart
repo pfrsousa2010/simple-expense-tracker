@@ -112,6 +112,12 @@ class DatabaseService {
     return result.map((map) => Categoria.fromMap(map)).toList();
   }
 
+  Future<List<Categoria>> buscarTodasCategorias() async {
+    final db = await instance.database;
+    final result = await db.query('categorias', orderBy: 'nome ASC');
+    return result.map((map) => Categoria.fromMap(map)).toList();
+  }
+
   Future<Categoria?> getCategoria(int id) async {
     final db = await instance.database;
     final result = await db.query(
@@ -167,6 +173,15 @@ class DatabaseService {
       'SELECT DISTINCT nome FROM fontes_renda ORDER BY nome ASC',
     );
     return result.map((map) => map['nome'] as String).toList();
+  }
+
+  Future<List<FonteRenda>> buscarTodasFontesRenda() async {
+    final db = await instance.database;
+    final result = await db.query(
+      'fontes_renda',
+      orderBy: 'ano DESC, mes DESC',
+    );
+    return result.map((map) => FonteRenda.fromMap(map)).toList();
   }
 
   Future<int> updateFonteRenda(FonteRenda fonte) async {
