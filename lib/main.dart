@@ -11,33 +11,53 @@ import 'utils/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializar formatação de datas em português
-  await initializeDateFormatting('pt_BR', null);
+  // Tratamento de erros durante inicialização para evitar tela branca
+  try {
+    // Inicializar formatação de datas em português
+    await initializeDateFormatting('pt_BR', null);
+  } catch (e) {
+    // Log do erro mas continua a execução
+    debugPrint('Erro ao inicializar formatação de datas: $e');
+  }
 
-  // Inicializar serviço de notificações
-  final notificationService = NotificationService.instance;
-  await notificationService.initialize();
-  await notificationService.requestPermissions();
-
-  // Agendar notificações diárias de vencimentos
-  await notificationService.agendarNotificacoesDiarias();
+  // Inicializar serviço de notificações com tratamento de erros
+  try {
+    final notificationService = NotificationService.instance;
+    await notificationService.initialize();
+    await notificationService.requestPermissions();
+    
+    // Agendar notificações diárias de vencimentos
+    await notificationService.agendarNotificacoesDiarias();
+  } catch (e) {
+    // Log do erro mas continua a execução (notificações não são críticas)
+    debugPrint('Erro ao inicializar notificações: $e');
+  }
 
   // Configurar orientação apenas para portrait
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
+  try {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
+  } catch (e) {
+    debugPrint('Erro ao configurar orientação: $e');
+  }
 
   // Configurar estilo da barra de status
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: AppTheme.backgroundDark,
-      systemNavigationBarIconBrightness: Brightness.light,
-    ),
-  );
+  try {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: AppTheme.backgroundDark,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
+  } catch (e) {
+    debugPrint('Erro ao configurar estilo da barra de status: $e');
+  }
 
+  // Sempre executar o app, mesmo se houver erros nas inicializações
   runApp(const MyApp());
 }
 

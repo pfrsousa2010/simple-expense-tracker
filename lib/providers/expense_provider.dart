@@ -38,9 +38,29 @@ class ExpenseProvider with ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    await _notification.initialize();
-    await _notification.requestPermissions();
-    await carregarDados();
+    try {
+      // Tentar inicializar notificações (não crítico)
+      try {
+        await _notification.initialize();
+        await _notification.requestPermissions();
+      } catch (e) {
+        if (kDebugMode) {
+          print('Erro ao inicializar notificações no provider: $e');
+        }
+        // Continua mesmo se notificações falharem
+      }
+
+      // Carregar dados do banco (crítico)
+      await carregarDados();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Erro ao inicializar provider: $e');
+      }
+      // Em caso de erro, inicializar com dados vazios
+      _categorias = [];
+      _fontesRenda = [];
+      _despesas = [];
+    }
 
     _isLoading = false;
     notifyListeners();
@@ -48,9 +68,19 @@ class ExpenseProvider with ChangeNotifier {
 
   // Carregar dados do mês atual
   Future<void> carregarDados() async {
-    _categorias = await _db.getCategorias();
-    _fontesRenda = await _db.getFontesRenda(_mesAtual.month, _mesAtual.year);
-    _despesas = await _db.getDespesas(_mesAtual.month, _mesAtual.year);
+    try {
+      _categorias = await _db.getCategorias();
+      _fontesRenda = await _db.getFontesRenda(_mesAtual.month, _mesAtual.year);
+      _despesas = await _db.getDespesas(_mesAtual.month, _mesAtual.year);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Erro ao carregar dados: $e');
+      }
+      // Em caso de erro, usar listas vazias
+      _categorias = [];
+      _fontesRenda = [];
+      _despesas = [];
+    }
     notifyListeners();
   }
 

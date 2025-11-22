@@ -12,8 +12,14 @@ class DatabaseService {
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('expense_tracker.db');
-    return _database!;
+    try {
+      _database = await _initDB('expense_tracker.db');
+      return _database!;
+    } catch (e) {
+      // Log do erro e relançar para que o chamador possa tratar
+      print('Erro ao inicializar banco de dados: $e');
+      rethrow;
+    }
   }
 
   Future<Database> _initDB(String filePath) async {
