@@ -26,7 +26,12 @@ class DatabaseService {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
 
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(
+      path,
+      version: 2,
+      onCreate: _createDB,
+      onUpgrade: _upgradeDB,
+    );
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -46,7 +51,8 @@ class DatabaseService {
         nome TEXT NOT NULL,
         valor REAL NOT NULL,
         mes INTEGER NOT NULL,
-        ano INTEGER NOT NULL
+        ano INTEGER NOT NULL,
+        diaRecebimento INTEGER
       )
     ''');
 
@@ -96,6 +102,15 @@ class DatabaseService {
 
     for (var categoria in categoriasPadrao) {
       await db.insert('categorias', categoria.toMap());
+    }
+  }
+
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Adicionar coluna diaRecebimento na tabela fontes_renda
+      await db.execute(
+        'ALTER TABLE fontes_renda ADD COLUMN diaRecebimento INTEGER',
+      );
     }
   }
 

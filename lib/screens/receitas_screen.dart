@@ -5,6 +5,7 @@ import '../providers/expense_provider.dart';
 import '../models/fonte_renda.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
+import '../widgets/dia_vencimento_selector_simples.dart';
 import 'copiar_receitas_screen.dart';
 
 class ReceitasScreen extends StatefulWidget {
@@ -160,6 +161,7 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
         margin: const EdgeInsets.only(bottom: 12),
         child: ListTile(
           contentPadding: const EdgeInsets.all(16),
+          isThreeLine: receita.diaRecebimento != null,
           leading: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -176,12 +178,44 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
             receita.nome,
             style: Theme.of(context).textTheme.titleMedium,
           ),
-          subtitle: Text(
-            Formatters.formatCurrency(receita.valor),
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: AppTheme.primaryColor,
-              fontWeight: FontWeight.bold,
-            ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 4),
+              Text(
+                Formatters.formatCurrency(receita.valor),
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: AppTheme.primaryColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (receita.diaRecebimento != null) ...[
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentColor.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'Dia ${receita.diaRecebimento}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
           ),
           trailing: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -207,66 +241,84 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
     final provider = context.read<ExpenseProvider>();
     final nomeController = TextEditingController();
     final valorController = TextEditingController();
+    int? diaRecebimento;
 
     if (!context.mounted) return;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Adicionar Receita'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nomeController,
-                decoration: const InputDecoration(
-                  labelText: 'Nome da Fonte',
-                  hintText: 'Ex: Salário, Freelance',
-                ),
-                textCapitalization: TextCapitalization.words,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: valorController,
-                decoration: const InputDecoration(
-                  labelText: 'Valor',
-                  prefixText: 'R\$ ',
-                ),
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Adicionar Receita'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nomeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome da Fonte',
+                      hintText: 'Ex: Salário, Freelance',
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: valorController,
+                    decoration: const InputDecoration(
+                      labelText: 'Valor',
+                      prefixText: 'R\$ ',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d+\.?\d{0,2}'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  DiaVencimentoSelectorSimples(
+                    initialValue: diaRecebimento,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        diaRecebimento = value;
+                      });
+                    },
+                  ),
                 ],
               ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (nomeController.text.isEmpty ||
+                      valorController.text.isEmpty) {
+                    return;
+                  }
+
+                  final receita = FonteRenda(
+                    nome: nomeController.text,
+                    valor: double.parse(valorController.text),
+                    mes: provider.mesAtual.month,
+                    ano: provider.mesAtual.year,
+                    diaRecebimento: diaRecebimento,
+                  );
+
+                  provider.adicionarFonteRenda(receita);
+                  Navigator.pop(context);
+                },
+                child: const Text('Adicionar'),
+              ),
             ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (nomeController.text.isEmpty || valorController.text.isEmpty) {
-                return;
-              }
-
-              final receita = FonteRenda(
-                nome: nomeController.text,
-                valor: double.parse(valorController.text),
-                mes: provider.mesAtual.month,
-                ano: provider.mesAtual.year,
-              );
-
-              provider.adicionarFonteRenda(receita);
-              Navigator.pop(context);
-            },
-            child: const Text('Adicionar'),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -280,57 +332,79 @@ class _ReceitasScreenState extends State<ReceitasScreen> {
     final valorController = TextEditingController(
       text: receita.valor.toString(),
     );
+    int? diaRecebimento = receita.diaRecebimento;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Editar Receita'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nomeController,
-              decoration: const InputDecoration(labelText: 'Nome da Fonte'),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: valorController,
-              decoration: const InputDecoration(
-                labelText: 'Valor',
-                prefixText: 'R\$ ',
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Editar Receita'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nomeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nome da Fonte',
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: valorController,
+                    decoration: const InputDecoration(
+                      labelText: 'Valor',
+                      prefixText: 'R\$ ',
+                    ),
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                        RegExp(r'^\d+\.?\d{0,2}'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  DiaVencimentoSelectorSimples(
+                    initialValue: diaRecebimento,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        diaRecebimento = value;
+                      });
+                    },
+                  ),
+                ],
               ),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (nomeController.text.isEmpty || valorController.text.isEmpty) {
-                return;
-              }
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (nomeController.text.isEmpty ||
+                      valorController.text.isEmpty) {
+                    return;
+                  }
 
-              final receitaAtualizada = receita.copyWith(
-                nome: nomeController.text,
-                valor: double.parse(valorController.text),
-              );
+                  final receitaAtualizada = receita.copyWith(
+                    nome: nomeController.text,
+                    valor: double.parse(valorController.text),
+                    diaRecebimento: diaRecebimento,
+                  );
 
-              provider.atualizarFonteRenda(receitaAtualizada);
-              Navigator.pop(context);
-            },
-            child: const Text('Salvar'),
-          ),
-        ],
+                  provider.atualizarFonteRenda(receitaAtualizada);
+                  Navigator.pop(context);
+                },
+                child: const Text('Salvar'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

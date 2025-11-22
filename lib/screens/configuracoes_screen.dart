@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../utils/app_theme.dart';
 import '../services/import_export_service.dart';
 import '../providers/expense_provider.dart';
@@ -15,6 +17,42 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
   final ImportExportService _importExportService = ImportExportService.instance;
   bool _isExporting = false;
   bool _isImporting = false;
+  String _appVersion = '1.0.0';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = packageInfo.version;
+        });
+      }
+    } catch (e) {
+      // Se falhar, mantém a versão padrão
+    }
+  }
+
+  Future<void> _abrirSiteMicroFocus() async {
+    final url = Uri.parse('https://microfocus.dev.br/');
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Não foi possível abrir o link: $e'),
+            backgroundColor: AppTheme.secondaryColor,
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _exportarDados() async {
     setState(() {
@@ -148,58 +186,94 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Configurações')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: Column(
         children: [
-          const Text(
-            'Backup de Dados',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Exporte seus dados para fazer backup ou importe dados de outro dispositivo.',
-            style: TextStyle(color: AppTheme.textSecondary),
-          ),
-          const SizedBox(height: 24),
-          Card(
-            child: Column(
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
               children: [
-                ListTile(
-                  leading: const Icon(
-                    Icons.upload,
-                    color: AppTheme.primaryColor,
-                  ),
-                  title: const Text('Exportar Dados'),
-                  subtitle: const Text('Salve seus dados em um arquivo'),
-                  trailing: _isExporting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.chevron_right),
-                  onTap: _isExporting ? null : _exportarDados,
+                const Text(
+                  'Backup de Dados',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(
-                    Icons.download,
-                    color: AppTheme.secondaryColor,
+                const SizedBox(height: 8),
+                const Text(
+                  'Exporte seus dados para fazer backup ou importe dados de outro dispositivo.',
+                  style: TextStyle(color: AppTheme.textSecondary),
+                ),
+                const SizedBox(height: 24),
+                Card(
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(
+                          Icons.upload,
+                          color: AppTheme.primaryColor,
+                        ),
+                        title: const Text('Exportar Dados'),
+                        subtitle: const Text('Salve seus dados em um arquivo'),
+                        trailing: _isExporting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.chevron_right),
+                        onTap: _isExporting ? null : _exportarDados,
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(
+                          Icons.download,
+                          color: AppTheme.secondaryColor,
+                        ),
+                        title: const Text('Importar Dados'),
+                        subtitle: const Text(
+                          'Carregue seus dados a partir de um arquivo',
+                        ),
+                        trailing: _isImporting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.chevron_right),
+                        onTap: _isImporting ? null : _importarDados,
+                      ),
+                    ],
                   ),
-                  title: const Text('Importar Dados'),
-                  subtitle: const Text(
-                    'Carregue seus dados a partir de um arquivo',
-                  ),
-                  trailing: _isImporting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.chevron_right),
-                  onTap: _isImporting ? null : _importarDados,
                 ),
               ],
+            ),
+          ),
+          // Informações discretas no final
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: InkWell(
+              onTap: _abrirSiteMicroFocus,
+              child: Column(
+                children: [
+                  Text(
+                    'Micro Focus',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textTertiary,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Versão $_appVersion',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textTertiary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

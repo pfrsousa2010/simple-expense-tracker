@@ -4,6 +4,7 @@ class FonteRenda {
   final double valor;
   final int mes;
   final int ano;
+  final int? diaRecebimento;
 
   FonteRenda({
     this.id,
@@ -11,6 +12,7 @@ class FonteRenda {
     required this.valor,
     required this.mes,
     required this.ano,
+    this.diaRecebimento,
   });
 
   Map<String, dynamic> toMap() {
@@ -19,6 +21,7 @@ class FonteRenda {
       'valor': valor,
       'mes': mes,
       'ano': ano,
+      'diaRecebimento': diaRecebimento,
     };
 
     // Só incluir o id se não for null
@@ -36,6 +39,7 @@ class FonteRenda {
       valor: map['valor'],
       mes: map['mes'],
       ano: map['ano'],
+      diaRecebimento: map['diaRecebimento'],
     );
   }
 
@@ -45,6 +49,7 @@ class FonteRenda {
     double? valor,
     int? mes,
     int? ano,
+    int? diaRecebimento,
   }) {
     return FonteRenda(
       id: id ?? this.id,
@@ -52,6 +57,7 @@ class FonteRenda {
       valor: valor ?? this.valor,
       mes: mes ?? this.mes,
       ano: ano ?? this.ano,
+      diaRecebimento: diaRecebimento ?? this.diaRecebimento,
     );
   }
 }
