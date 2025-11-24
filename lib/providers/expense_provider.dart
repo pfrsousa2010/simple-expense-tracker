@@ -112,6 +112,24 @@ class ExpenseProvider with ChangeNotifier {
   }
 
   Future<void> deletarCategoria(int id) async {
+    // Buscar despesas associadas para cancelar notificações
+    final despesas = await _db.getDespesasPorCategoriaId(id);
+    
+    // Cancelar notificações de todas as despesas
+    for (var despesa in despesas) {
+      if (despesa.id != null) {
+        try {
+          await _notification.cancelarNotificacao(despesa.id!);
+        } catch (e) {
+          // Ignora erros ao cancelar notificações
+          if (kDebugMode) {
+            print('Erro ao cancelar notificação: $e');
+          }
+        }
+      }
+    }
+    
+    // Deletar categoria (que também deleta as despesas)
     await _db.deleteCategoria(id);
     await carregarDados();
   }

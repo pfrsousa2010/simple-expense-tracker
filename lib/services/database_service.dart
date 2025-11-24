@@ -101,6 +101,11 @@ class DatabaseService {
       Categoria(nome: 'Impostos', icone: '💰', isPadrao: true),
       Categoria(nome: 'Internet/Telefone', icone: '📱', isPadrao: true),
       Categoria(nome: 'Seguros', icone: '🛡️', isPadrao: true),
+      Categoria(nome: 'Farmácia', icone: '💊', isPadrao: true),
+      Categoria(nome: 'Streams', icone: '🎬', isPadrao: true),
+      Categoria(nome: 'Viagens', icone: '✈️', isPadrao: true),
+      Categoria(nome: 'Academia', icone: '🏋️', isPadrao: true),
+      Categoria(nome: 'Bares', icone: '🍺', isPadrao: true),
       Categoria(nome: 'Supermercado', icone: '🛒', isPadrao: true),
       Categoria(nome: 'Contas', icone: '📄', isPadrao: true),
       Categoria(nome: 'Vestuário', icone: '👕', isPadrao: true),
@@ -164,6 +169,11 @@ class DatabaseService {
 
   Future<int> deleteCategoria(int id) async {
     final db = await instance.database;
+
+    // Deletar todas as despesas associadas a esta categoria
+    await db.delete('despesas', where: 'categoriaId = ?', whereArgs: [id]);
+
+    // Deletar a categoria (apenas se não for padrão)
     return db.delete(
       'categorias',
       where: 'id = ? AND isPadrao = 0',
@@ -238,6 +248,16 @@ class DatabaseService {
     return result.map((map) => Despesa.fromMap(map)).toList();
   }
 
+  Future<List<Despesa>> getDespesasPorCategoriaId(int categoriaId) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'despesas',
+      where: 'categoriaId = ?',
+      whereArgs: [categoriaId],
+    );
+    return result.map((map) => Despesa.fromMap(map)).toList();
+  }
+
   Future<List<Despesa>> getDespesasFixas() async {
     final db = await instance.database;
     final result = await db.query(
@@ -268,6 +288,15 @@ class DatabaseService {
       [categoriaId, mes, ano],
     );
     return (result.first['total'] as double?) ?? 0.0;
+  }
+
+  Future<int> contarDespesasPorCategoria(int categoriaId) async {
+    final db = await instance.database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as total FROM despesas WHERE categoriaId = ?',
+      [categoriaId],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
   }
 
   Future<int> updateDespesa(Despesa despesa) async {

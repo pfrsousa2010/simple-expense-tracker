@@ -5,6 +5,7 @@ import '../providers/expense_provider.dart';
 import '../models/categoria.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
+import '../services/database_service.dart';
 
 class CategoriasScreen extends StatelessWidget {
   const CategoriasScreen({super.key});
@@ -500,11 +501,53 @@ class CategoriasScreen extends StatelessWidget {
     ExpenseProvider provider,
     Categoria categoria,
   ) async {
+    // Verificar se há despesas associadas a esta categoria
+    final databaseService = DatabaseService.instance;
+    final quantidadeDespesas = await databaseService.contarDespesasPorCategoria(categoria.id!);
+
     bool? result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Excluir Categoria'),
-        content: Text('Deseja realmente excluir "${categoria.nome}"?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Deseja realmente excluir "${categoria.nome}"?'),
+            if (quantidadeDespesas > 0) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.warningColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.warningColor),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: AppTheme.warningColor,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        quantidadeDespesas == 1
+                            ? 'Esta categoria possui 1 despesa associada. Ao excluir, a despesa será perdida permanentemente.'
+                            : 'Esta categoria possui $quantidadeDespesas despesas associadas. Ao excluir, todas as despesas serão perdidas permanentemente.',
+                        style: TextStyle(
+                          color: AppTheme.warningColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

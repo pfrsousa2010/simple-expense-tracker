@@ -147,12 +147,12 @@ class _AdicionarDespesaScreenState extends State<AdicionarDespesaScreen> {
         actions: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, color: Colors.red),
             tooltip: 'Cancelar',
           ),
           IconButton(
             onPressed: _salvarDespesa,
-            icon: const Icon(Icons.check),
+            icon: const Icon(Icons.check, color: Colors.green),
             tooltip: 'Salvar',
           ),
         ],
