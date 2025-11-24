@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/categoria.dart';
 import '../models/fonte_renda.dart';
 import '../models/despesa.dart';
+import '../models/cartao_credito.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
 
@@ -13,12 +14,14 @@ class ExpenseProvider with ChangeNotifier {
   List<Categoria> _categorias = [];
   List<FonteRenda> _fontesRenda = [];
   List<Despesa> _despesas = [];
+  List<CartaoCredito> _cartoesCredito = [];
   bool _isLoading = false;
 
   DateTime get mesAtual => _mesAtual;
   List<Categoria> get categorias => _categorias;
   List<FonteRenda> get fontesRenda => _fontesRenda;
   List<Despesa> get despesas => _despesas;
+  List<CartaoCredito> get cartoesCredito => _cartoesCredito;
   bool get isLoading => _isLoading;
 
   double get totalReceitas {
@@ -60,6 +63,7 @@ class ExpenseProvider with ChangeNotifier {
       _categorias = [];
       _fontesRenda = [];
       _despesas = [];
+      _cartoesCredito = [];
     }
 
     _isLoading = false;
@@ -72,6 +76,7 @@ class ExpenseProvider with ChangeNotifier {
       _categorias = await _db.getCategorias();
       _fontesRenda = await _db.getFontesRenda(_mesAtual.month, _mesAtual.year);
       _despesas = await _db.getDespesas(_mesAtual.month, _mesAtual.year);
+      _cartoesCredito = await _db.getCartoesCredito();
     } catch (e) {
       if (kDebugMode) {
         print('Erro ao carregar dados: $e');
@@ -80,6 +85,7 @@ class ExpenseProvider with ChangeNotifier {
       _categorias = [];
       _fontesRenda = [];
       _despesas = [];
+      _cartoesCredito = [];
     }
     notifyListeners();
   }
@@ -293,5 +299,21 @@ class ExpenseProvider with ChangeNotifier {
     }
 
     return mapa;
+  }
+
+  // Cartões de Crédito
+  Future<void> adicionarCartaoCredito(CartaoCredito cartao) async {
+    await _db.createCartaoCredito(cartao);
+    await carregarDados();
+  }
+
+  Future<void> atualizarCartaoCredito(CartaoCredito cartao) async {
+    await _db.updateCartaoCredito(cartao);
+    await carregarDados();
+  }
+
+  Future<void> deletarCartaoCredito(int id) async {
+    await _db.deleteCartaoCredito(id);
+    await carregarDados();
   }
 }

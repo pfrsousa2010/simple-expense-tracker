@@ -184,9 +184,7 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Configurações')),
-      body: Column(
+    return Column(
         children: [
           Expanded(
             child: ListView(
@@ -277,7 +275,6 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 }

@@ -12,29 +12,34 @@ class CategoriasScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Categorias')),
-      body: Consumer<ExpenseProvider>(
-        builder: (context, provider, _) {
-          final categorias = provider.categorias;
+    return Stack(
+      children: [
+        Consumer<ExpenseProvider>(
+          builder: (context, provider, _) {
+            final categorias = provider.categorias;
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: categorias.length,
-            itemBuilder: (context, index) {
-              final categoria = categorias[index];
-              final gasto = provider.getGastosPorCategoria(categoria.id!);
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: categorias.length,
+              itemBuilder: (context, index) {
+                final categoria = categorias[index];
+                final gasto = provider.getGastosPorCategoria(categoria.id!);
 
-              return _buildCategoriaCard(context, provider, categoria, gasto);
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddCategoriaDialog(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Nova Categoria'),
-      ),
+                return _buildCategoriaCard(context, provider, categoria, gasto);
+              },
+            );
+          },
+        ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton.extended(
+            onPressed: () => _showAddCategoriaDialog(context),
+            icon: const Icon(Icons.add),
+            label: const Text('Nova Categoria'),
+          ),
+        ),
+      ],
     );
   }
 

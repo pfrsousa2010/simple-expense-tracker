@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import '../models/categoria.dart';
 import '../models/fonte_renda.dart';
 import '../models/despesa.dart';
+import '../models/cartao_credito.dart';
 
 class DatabaseService {
   static final DatabaseService instance = DatabaseService._init();
@@ -28,7 +29,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 4,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -69,6 +70,16 @@ class DatabaseService {
         isFixa INTEGER NOT NULL,
         dataCriacao TEXT NOT NULL,
         FOREIGN KEY (categoriaId) REFERENCES categorias (id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE cartoes_credito (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nome TEXT NOT NULL,
+        banco TEXT NOT NULL,
+        numero TEXT NOT NULL,
+        cor INTEGER NOT NULL
       )
     ''');
 
@@ -122,6 +133,34 @@ class DatabaseService {
       await db.execute(
         'ALTER TABLE fontes_renda ADD COLUMN diaRecebimento INTEGER',
       );
+    }
+    if (oldVersion < 3) {
+      // Criar tabela de cartões de crédito
+      await db.execute('''
+        CREATE TABLE cartoes_credito (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nome TEXT NOT NULL,
+          banco TEXT NOT NULL,
+          numero TEXT NOT NULL,
+          cor INTEGER NOT NULL
+        )
+      ''');
+    }
+    if (oldVersion < 4) {
+      // Adicionar coluna cor na tabela cartoes_credito
+      try {
+        await db.execute('ALTER TABLE cartoes_credito ADD COLUMN cor INTEGER');
+        // Atualizar registros existentes com cor padrão (azul - 0xFF2196F3 = 4294967283)
+        await db.rawUpdate(
+          'UPDATE cartoes_credito SET cor = ? WHERE cor IS NULL',
+          [0xFF2196F3],
+        );
+        // Tornar a coluna NOT NULL após atualizar os valores
+        // SQLite não suporta ALTER COLUMN, então precisamos recriar a tabela
+        // Por enquanto, deixamos como nullable e tratamos no código
+      } catch (e) {
+        // Se a coluna já existir, ignora o erro
+      }
     }
   }
 
@@ -337,6 +376,47 @@ class DatabaseService {
       );
       await createDespesa(novaDespesa);
     }
+  }
+
+  // CRUD Cartões de Crédito
+  Future<CartaoCredito> createCartaoCredito(CartaoCredito cartao) async {
+    final db = await instance.database;
+    final id = await db.insert('cartoes_credito', cartao.toMap());
+    return cartao.copyWith(id: id);
+  }
+
+  Future<List<CartaoCredito>> getCartoesCredito() async {
+    final db = await instance.database;
+    final result = await db.query('cartoes_credito', orderBy: 'nome ASC');
+    return result.map((map) => CartaoCredito.fromMap(map)).toList();
+  }
+
+  Future<CartaoCredito?> getCartaoCredito(int id) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'cartoes_credito',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (result.isNotEmpty) {
+      return CartaoCredito.fromMap(result.first);
+    }
+    return null;
+  }
+
+  Future<int> updateCartaoCredito(CartaoCredito cartao) async {
+    final db = await instance.database;
+    return db.update(
+      'cartoes_credito',
+      cartao.toMap(),
+      where: 'id = ?',
+      whereArgs: [cartao.id],
+    );
+  }
+
+  Future<int> deleteCartaoCredito(int id) async {
+    final db = await instance.database;
+    return db.delete('cartoes_credito', where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> close() async {

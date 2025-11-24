@@ -12,6 +12,7 @@ import 'categorias_screen.dart';
 import 'vencendo_hoje_screen.dart';
 import 'proximos_vencimentos_screen.dart';
 import 'configuracoes_screen.dart';
+import 'cartoes_credito_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +22,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+
   @override
   void initState() {
     super.initState();
@@ -30,115 +33,152 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Finanças'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.category),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CategoriasScreen()),
-              );
-            },
+      appBar: AppBar(title: Text(_getAppBarTitle())),
+      body: _getCurrentPage(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _currentIndex,
+        onTap: _onTabTapped,
+        type: BottomNavigationBarType.fixed,
+        selectedItemColor: AppTheme.primaryColor,
+        unselectedItemColor: AppTheme.textTertiary,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.credit_card),
+            label: 'Cartões',
           ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ConfiguracoesScreen()),
-              );
-            },
+          BottomNavigationBarItem(
+            icon: Icon(Icons.category),
+            label: 'Categorias',
           ),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Config.'),
         ],
       ),
-      body: Consumer<ExpenseProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    );
+  }
 
-          return RefreshIndicator(
-            onRefresh: provider.carregarDados,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Seletor de mês
-                  _buildMonthSelector(provider),
-                  const SizedBox(height: 20),
+  String _getAppBarTitle() {
+    switch (_currentIndex) {
+      case 0:
+        return 'Finanças';
+      case 1:
+        return 'Cartões de Crédito';
+      case 2:
+        return 'Categorias';
+      case 3:
+        return 'Configurações';
+      default:
+        return 'Finanças';
+    }
+  }
 
-                  // Card de saldo
-                  SaldoCard(
-                    receitas: provider.totalReceitas,
-                    despesas: provider.totalDespesas,
-                    saldo: provider.saldo,
-                  ),
-                  const SizedBox(height: 20),
+  Widget _getCurrentPage() {
+    switch (_currentIndex) {
+      case 0:
+        return _buildHomePage();
+      case 1:
+        return const CartoesCreditoScreen();
+      case 2:
+        return const CategoriasScreen();
+      case 3:
+        return const ConfiguracoesScreen();
+      default:
+        return _buildHomePage();
+    }
+  }
 
-                  // Botões de Receitas e Despesas
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ReceitasScreen(),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.add_circle),
-                          label: const Text('Receitas'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryColor,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
+  Widget _buildHomePage() {
+    return Consumer<ExpenseProvider>(
+      builder: (context, provider, _) {
+        if (provider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        return RefreshIndicator(
+          onRefresh: provider.carregarDados,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Seletor de mês
+                _buildMonthSelector(provider),
+                const SizedBox(height: 20),
+
+                // Card de saldo
+                SaldoCard(
+                  receitas: provider.totalReceitas,
+                  despesas: provider.totalDespesas,
+                  saldo: provider.saldo,
+                ),
+                const SizedBox(height: 20),
+
+                // Botões de Receitas e Despesas
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ReceitasScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.add_circle),
+                        label: const Text('Receitas'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const DespesasScreen(),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.remove_circle),
-                          label: const Text('Despesas'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.secondaryColor,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const DespesasScreen(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.remove_circle),
+                        label: const Text('Despesas'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.secondaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
 
-                  // Gastos por categoria com limite
-                  _buildCategoriasComLimite(provider),
-                  const SizedBox(height: 24),
+                // Gastos por categoria com limite
+                _buildCategoriasComLimite(provider),
+                const SizedBox(height: 24),
 
-                  // Botões de Vencimentos
-                  _buildBotoesVencimentos(context, provider),
-                ],
-              ),
+                // Botões de Vencimentos
+                _buildBotoesVencimentos(context, provider),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
