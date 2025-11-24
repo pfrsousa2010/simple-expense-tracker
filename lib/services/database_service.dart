@@ -96,6 +96,12 @@ class DatabaseService {
         limiteGasto: 300.0,
         isPadrao: true,
       ),
+      Categoria(nome: 'Pet', icone: '🐶', isPadrao: true),
+      Categoria(nome: 'Cartão de crédito', icone: '💳', isPadrao: true),
+      Categoria(nome: 'Impostos', icone: '💰', isPadrao: true),
+      Categoria(nome: 'Internet/Telefone', icone: '📱', isPadrao: true),
+      Categoria(nome: 'Seguros', icone: '🛡️', isPadrao: true),
+      Categoria(nome: 'Supermercado', icone: '🛒', isPadrao: true),
       Categoria(nome: 'Contas', icone: '📄', isPadrao: true),
       Categoria(nome: 'Vestuário', icone: '👕', isPadrao: true),
     ];
