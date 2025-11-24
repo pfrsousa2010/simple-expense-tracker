@@ -1,11 +1,11 @@
 {
-    "name": "simple_expense_tracker",
-    "short_name": "simple_expense_tracker",
+    "name": "Controle Financeiro",
+    "short_name": "Controle Financeiro",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Aplicativo de controle financeiro para gerenciar suas despesas e receitas.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

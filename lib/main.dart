@@ -25,7 +25,7 @@ void main() async {
     final notificationService = NotificationService.instance;
     await notificationService.initialize();
     await notificationService.requestPermissions();
-    
+
     // Agendar notificações diárias de vencimentos
     await notificationService.agendarNotificacoesDiarias();
   } catch (e) {
@@ -69,7 +69,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => ExpenseProvider(),
       child: MaterialApp(
-        title: 'SET',
+        title: 'Controle Financeiro',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         home: const HomeScreen(),
