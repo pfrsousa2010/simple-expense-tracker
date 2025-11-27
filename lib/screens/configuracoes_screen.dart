@@ -151,13 +151,17 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
       await provider.carregarDados();
 
       if (mounted) {
+        final cartoes = resultado['cartoesCredito'] ?? 0;
+        final faturas = resultado['faturasCartao'] ?? 0;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               'Dados importados com sucesso!\n'
               'Categorias: ${resultado['categorias']}, '
               'Receitas: ${resultado['fontesRenda']}, '
-              'Despesas: ${resultado['despesas']}',
+              'Despesas: ${resultado['despesas']}'
+              '${cartoes > 0 ? ', Cartões: $cartoes' : ''}'
+              '${faturas > 0 ? ', Faturas: $faturas' : ''}',
             ),
             backgroundColor: AppTheme.primaryColor,
             duration: const Duration(seconds: 4),
@@ -185,96 +189,92 @@ class _ConfiguracoesScreenState extends State<ConfiguracoesScreen> {
   @override
   Widget build(BuildContext context) {
     return Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
+      children: [
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              const Text(
+                'Backup de Dados',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Exporte seus dados para fazer backup ou importe dados de outro dispositivo.',
+                style: TextStyle(color: AppTheme.textSecondary),
+              ),
+              const SizedBox(height: 24),
+              Card(
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: const Icon(
+                        Icons.upload,
+                        color: AppTheme.primaryColor,
+                      ),
+                      title: const Text('Exportar Dados'),
+                      subtitle: const Text('Salve seus dados em um arquivo'),
+                      trailing: _isExporting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.chevron_right),
+                      onTap: _isExporting ? null : _exportarDados,
+                    ),
+                    const Divider(height: 1),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.download,
+                        color: AppTheme.secondaryColor,
+                      ),
+                      title: const Text('Importar Dados'),
+                      subtitle: const Text(
+                        'Carregue seus dados a partir de um arquivo',
+                      ),
+                      trailing: _isImporting
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.chevron_right),
+                      onTap: _isImporting ? null : _importarDados,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Informações discretas no final
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          child: InkWell(
+            onTap: _abrirSiteMicroFocus,
+            child: Column(
               children: [
-                const Text(
-                  'Backup de Dados',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Text(
+                  'Micro Focus',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textTertiary,
+                    fontSize: 12,
+                  ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Exporte seus dados para fazer backup ou importe dados de outro dispositivo.',
-                  style: TextStyle(color: AppTheme.textSecondary),
-                ),
-                const SizedBox(height: 24),
-                Card(
-                  child: Column(
-                    children: [
-                      ListTile(
-                        leading: const Icon(
-                          Icons.upload,
-                          color: AppTheme.primaryColor,
-                        ),
-                        title: const Text('Exportar Dados'),
-                        subtitle: const Text('Salve seus dados em um arquivo'),
-                        trailing: _isExporting
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.chevron_right),
-                        onTap: _isExporting ? null : _exportarDados,
-                      ),
-                      const Divider(height: 1),
-                      ListTile(
-                        leading: const Icon(
-                          Icons.download,
-                          color: AppTheme.secondaryColor,
-                        ),
-                        title: const Text('Importar Dados'),
-                        subtitle: const Text(
-                          'Carregue seus dados a partir de um arquivo',
-                        ),
-                        trailing: _isImporting
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.chevron_right),
-                        onTap: _isImporting ? null : _importarDados,
-                      ),
-                    ],
+                const SizedBox(height: 4),
+                Text(
+                  'Versão $_appVersion',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textTertiary,
+                    fontSize: 11,
                   ),
                 ),
               ],
             ),
           ),
-          // Informações discretas no final
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: InkWell(
-              onTap: _abrirSiteMicroFocus,
-              child: Column(
-                children: [
-                  Text(
-                    'Micro Focus',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textTertiary,
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Versão $_appVersion',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textTertiary,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 }

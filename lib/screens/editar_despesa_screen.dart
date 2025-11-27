@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
 import '../models/despesa.dart';
@@ -21,10 +22,12 @@ class _EditarDespesaScreenState extends State<EditarDespesaScreen> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _descricaoController;
   late final TextEditingController _valorController;
+  late final TextEditingController _estabelecimentoController;
   late Categoria _categoriaSelecionada;
   int? _diaVencimento;
   late StatusPagamento _statusSelecionado;
   late bool _isFixa;
+  DateTime? _dataCompra;
 
   @override
   void initState() {
@@ -36,20 +39,41 @@ class _EditarDespesaScreenState extends State<EditarDespesaScreen> {
     _valorController = TextEditingController(
       text: widget.despesa.valor.toString(),
     );
+    _estabelecimentoController = TextEditingController(
+      text: widget.despesa.estabelecimento ?? '',
+    );
     _categoriaSelecionada = provider.categorias.firstWhere(
       (cat) => cat.id == widget.despesa.categoriaId,
     );
     _diaVencimento = widget.despesa.diaVencimento;
     _statusSelecionado = widget.despesa.status;
     _isFixa = widget.despesa.isFixa;
+    _dataCompra = widget.despesa.dataCompra;
   }
 
   @override
   void dispose() {
     _descricaoController.dispose();
     _valorController.dispose();
+    _estabelecimentoController.dispose();
     super.dispose();
   }
+
+  Future<void> _selecionarDataCompra() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _dataCompra ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      locale: const Locale('pt', 'BR'),
+    );
+    if (picked != null && picked != _dataCompra) {
+      setState(() {
+        _dataCompra = picked;
+      });
+    }
+  }
+
 
   Map<String, dynamic> _getStatusInfo(StatusPagamento status) {
     switch (status) {
@@ -144,9 +168,11 @@ class _EditarDespesaScreenState extends State<EditarDespesaScreen> {
       descricao: _descricaoController.text,
       valor: double.parse(_valorController.text),
       categoriaId: _categoriaSelecionada.id!,
-      diaVencimento: _diaVencimento,
+      diaVencimento: _isFixa ? _diaVencimento : null,
       status: _statusSelecionado,
       isFixa: _isFixa,
+      dataCompra: _isFixa ? null : _dataCompra,
+      estabelecimento: _isFixa ? null : (_estabelecimentoController.text.isEmpty ? null : _estabelecimentoController.text),
     );
 
     final provider = context.read<ExpenseProvider>();
@@ -164,12 +190,12 @@ class _EditarDespesaScreenState extends State<EditarDespesaScreen> {
         actions: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.close),
+            icon: const Icon(Icons.close, color: Colors.red),
             tooltip: 'Cancelar',
           ),
           IconButton(
             onPressed: _salvarDespesa,
-            icon: const Icon(Icons.check),
+            icon: const Icon(Icons.check, color: Colors.green),
             tooltip: 'Salvar',
           ),
         ],
@@ -283,27 +309,73 @@ class _EditarDespesaScreenState extends State<EditarDespesaScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              DiaVencimentoSelectorSimples(
-                initialValue: _diaVencimento,
-                onChanged: (value) {
-                  setState(() {
-                    _diaVencimento = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
               Card(
                 child: CheckboxListTile(
                   value: _isFixa,
                   onChanged: (value) {
                     setState(() {
                       _isFixa = value ?? false;
+                      if (_isFixa) {
+                        // Limpar campos de despesa não fixa
+                        _estabelecimentoController.clear();
+                        _dataCompra = null;
+                        // Status padrão para despesa fixa: A Pagar
+                        _statusSelecionado = StatusPagamento.aPagar;
+                      } else {
+                        // Limpar campo de dia de vencimento
+                        _diaVencimento = null;
+                        // Status padrão para despesa não fixa: Pago
+                        _statusSelecionado = StatusPagamento.pago;
+                      }
                     });
                   },
                   title: const Text('Despesa Fixa'),
                   subtitle: const Text('Pode ser reaproveitada mensalmente'),
                 ),
               ),
+              if (_isFixa) ...[
+                const SizedBox(height: 16),
+                DiaVencimentoSelectorSimples(
+                  initialValue: _diaVencimento,
+                  onChanged: (value) {
+                    setState(() {
+                      _diaVencimento = value;
+                    });
+                  },
+                ),
+              ] else ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _estabelecimentoController,
+                  decoration: const InputDecoration(
+                    labelText: 'Estabelecimento',
+                    hintText: 'Ex: Supermercado XYZ',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: _selecionarDataCompra,
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Data da Compra',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_today),
+                    ),
+                    child: Text(
+                      _dataCompra != null
+                          ? DateFormat('dd/MM/yyyy', 'pt_BR').format(_dataCompra!)
+                          : 'Selecione a data',
+                      style: TextStyle(
+                        color: _dataCompra != null
+                            ? null
+                            : AppTheme.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

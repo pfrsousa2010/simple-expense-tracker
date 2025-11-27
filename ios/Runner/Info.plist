@@ -47,7 +47,11 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
-		<key>UIViewControllerBasedStatusBarAppearance</key>
-		<false/>
-	</dict>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Este aplicativo precisa acessar sua localização para preencher automaticamente o endereço das compras.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Este aplicativo precisa acessar sua localização para preencher automaticamente o endereço das compras.</string>
+</dict>
 </plist>

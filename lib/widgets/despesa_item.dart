@@ -62,20 +62,105 @@ class DespesaItem extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
-            Text(
-              Formatters.formatCurrency(despesa.valor),
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppTheme.secondaryColor,
-                fontWeight: FontWeight.bold,
+            // Estabelecimento (para cartão de crédito ou despesa não fixa)
+            if (despesa.estabelecimento != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(Icons.store, size: 14, color: AppTheme.textSecondary),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      despesa.estabelecimento!,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppTheme.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
+            ],
+            // Compra Online (para despesas de cartão de crédito)
+            if (despesa.isCartaoCredito && despesa.isCompraOnline) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.shopping_cart,
+                    size: 14,
+                    color: AppTheme.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Compra Online',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppTheme.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            // Dia da compra
+            if (despesa.dataCompra != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 14,
+                    color: AppTheme.textSecondary,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Dia ${despesa.dataCompra!.day}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Text(
+                  Formatters.formatCurrency(despesa.valor),
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: AppTheme.secondaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (despesa.isCartaoCredito &&
+                    despesa.tipoPagamento == TipoPagamentoCartao.parcelado &&
+                    despesa.numeroParcela != null &&
+                    despesa.totalParcelas != null) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      '${despesa.numeroParcela}/${despesa.totalParcelas}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ],
             ),
             const SizedBox(height: 4),
             Wrap(
               spacing: 8,
               runSpacing: 4,
               children: [
-                _buildStatusChip(context),
+                // Não mostrar status para despesas de cartão de crédito
+                if (!despesa.isCartaoCredito) _buildStatusChip(context),
                 if (despesa.diaVencimento != null)
                   Container(
                     padding: const EdgeInsets.symmetric(

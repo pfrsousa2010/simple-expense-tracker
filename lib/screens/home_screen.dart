@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import '../providers/expense_provider.dart';
+import '../models/cartao_credito.dart';
+import '../models/despesa.dart';
 import '../utils/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/saldo_card.dart';
@@ -174,6 +176,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 // Botões de Vencimentos
                 _buildBotoesVencimentos(context, provider),
+                const SizedBox(height: 24),
+                // Cards de Cartões de Crédito com Vencimento
+                _buildCartoesComVencimento(context, provider),
               ],
             ),
           ),
@@ -274,7 +279,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Vencimentos', style: Theme.of(context).textTheme.titleLarge),
+        Text(
+          'Vencimentos de contas',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         const SizedBox(height: 12),
         Row(
           children: [
@@ -526,6 +534,443 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Map<String, dynamic> _getStatusInfo(StatusPagamento status) {
+    switch (status) {
+      case StatusPagamento.pago:
+        return {
+          'color': AppTheme.primaryColor,
+          'icon': Icons.check_circle,
+          'text': 'Pago',
+        };
+      case StatusPagamento.agendado:
+        return {
+          'color': AppTheme.warningColor,
+          'icon': Icons.schedule,
+          'text': 'Agendado',
+        };
+      case StatusPagamento.debitoAutomatico:
+        return {
+          'color': AppTheme.accentColor,
+          'icon': Icons.autorenew,
+          'text': 'Débito Automático',
+        };
+      case StatusPagamento.aPagar:
+        return {
+          'color': AppTheme.secondaryColor,
+          'icon': Icons.pending,
+          'text': 'A Pagar',
+        };
+    }
+  }
+
+  Widget _buildCartoesComVencimento(
+    BuildContext context,
+    ExpenseProvider provider,
+  ) {
+    final hoje = DateTime.now();
+    final hojeNormalizado = DateTime(hoje.year, hoje.month, hoje.day);
+
+    // Buscar cartões que têm despesas vencendo hoje ou nos próximos dias
+    final cartoesComVencimento = <CartaoCredito, List<Despesa>>{};
+
+    for (var cartao in provider.cartoesCredito) {
+      if (cartao.diaVencimento == null) continue;
+
+      // Buscar despesas deste cartão
+      final despesasCartao = provider.despesas
+          .where((d) => d.cartaoCreditoId == cartao.id)
+          .toList();
+
+      if (despesasCartao.isEmpty) continue;
+
+      // Calcular vencimento baseado no mês ATUAL REAL (não o selecionado)
+      // O vencimento do cartão é sempre relativo ao mês atual
+      final vencimentoEsteMes = DateTime(
+        hoje.year,
+        hoje.month,
+        cartao.diaVencimento!,
+      );
+
+      // Normalizar a data de vencimento
+      final vencimentoEsteMesNormalizado = DateTime(
+        vencimentoEsteMes.year,
+        vencimentoEsteMes.month,
+        vencimentoEsteMes.day,
+      );
+
+      // Se o dia já passou este mês, considerar o próximo mês
+      DateTime vencimentoFinal;
+      if (vencimentoEsteMesNormalizado.isBefore(hojeNormalizado)) {
+        // Calcular próximo mês corretamente
+        final proximoMes = hoje.month == 12
+            ? DateTime(hoje.year + 1, 1, cartao.diaVencimento!)
+            : DateTime(hoje.year, hoje.month + 1, cartao.diaVencimento!);
+        vencimentoFinal = DateTime(
+          proximoMes.year,
+          proximoMes.month,
+          proximoMes.day,
+        );
+      } else {
+        vencimentoFinal = vencimentoEsteMesNormalizado;
+      }
+
+      final diasParaVencer = vencimentoFinal.difference(hojeNormalizado).inDays;
+
+      // Mostrar cartões que vencem hoje ou nos próximos 30 dias
+      if (diasParaVencer >= 0 && diasParaVencer <= 30) {
+        cartoesComVencimento[cartao] = despesasCartao;
+      }
+    }
+
+    if (cartoesComVencimento.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Vecimentos de faturas de cartão',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 12),
+        ...cartoesComVencimento.entries.map((entry) {
+          final cartao = entry.key;
+          final despesas = entry.value;
+          final totalFatura = despesas.fold(0.0, (sum, d) => sum + d.valor);
+
+          // Determinar o mês/ano da fatura baseado no vencimento
+          final vencimentoEsteMes = DateTime(
+            hoje.year,
+            hoje.month,
+            cartao.diaVencimento!,
+          );
+          final vencimentoEsteMesNormalizado = DateTime(
+            vencimentoEsteMes.year,
+            vencimentoEsteMes.month,
+            vencimentoEsteMes.day,
+          );
+
+          DateTime vencimentoFinal;
+          if (vencimentoEsteMesNormalizado.isBefore(hojeNormalizado)) {
+            final proximoMes = hoje.month == 12
+                ? DateTime(hoje.year + 1, 1, cartao.diaVencimento!)
+                : DateTime(hoje.year, hoje.month + 1, cartao.diaVencimento!);
+            vencimentoFinal = DateTime(
+              proximoMes.year,
+              proximoMes.month,
+              proximoMes.day,
+            );
+          } else {
+            vencimentoFinal = vencimentoEsteMesNormalizado;
+          }
+
+          final diasParaVencer = vencimentoFinal
+              .difference(hojeNormalizado)
+              .inDays;
+
+          // Usar o mês/ano selecionado pelo usuário, não o vencimento calculado
+          final mesFatura = provider.mesAtual.month;
+          final anoFatura = provider.mesAtual.year;
+
+          return FutureBuilder<StatusPagamento?>(
+            future: provider.getStatusFatura(cartao.id!, mesFatura, anoFatura),
+            builder: (context, snapshot) {
+              final statusFatura = snapshot.data ?? cartao.status;
+              final statusInfo = _getStatusInfo(statusFatura);
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: InkWell(
+                  onTap: () => _showStatusModal(context, provider, cartao),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: cartao.color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: cartao.color.withOpacity(0.3),
+                        width: 2,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: cartao.color,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.credit_card,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                cartao.nome,
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(fontWeight: FontWeight.bold),
+                              ),
+                              Text(
+                                cartao.banco,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              const SizedBox(height: 4),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (cartao.diaVencimento != null) ...[
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today,
+                                          size: 12,
+                                          color: AppTheme.textSecondary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          diasParaVencer == 0
+                                              ? 'Fatura vence hoje'
+                                              : diasParaVencer == 1
+                                              ? 'Fatura vence amanhã'
+                                              : 'Fatura vence em $diasParaVencer dias',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: diasParaVencer <= 3
+                                                    ? AppTheme.warningColor
+                                                    : AppTheme.textSecondary,
+                                                fontWeight: diasParaVencer <= 3
+                                                    ? FontWeight.w600
+                                                    : FontWeight.normal,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                  ],
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: (statusInfo['color'] as Color)
+                                          .withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          statusInfo['icon'] as IconData,
+                                          size: 12,
+                                          color: statusInfo['color'] as Color,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          statusInfo['text'] as String,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color:
+                                                    statusInfo['color']
+                                                        as Color,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          Formatters.formatCurrency(totalFatura),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: cartao.color,
+                                fontWeight: FontWeight.bold,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        }),
+      ],
+    );
+  }
+
+  void _showStatusModal(
+    BuildContext context,
+    ExpenseProvider provider,
+    CartaoCredito cartao,
+  ) {
+    // Usar o mês/ano selecionado pelo usuário, não o vencimento calculado
+    final mesFatura = provider.mesAtual.month;
+    final anoFatura = provider.mesAtual.year;
+
+    final despesasCartao = provider.despesas
+        .where((d) => d.cartaoCreditoId == cartao.id)
+        .toList();
+    final totalFatura = despesasCartao.fold(0.0, (sum, d) => sum + d.valor);
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => FutureBuilder<StatusPagamento?>(
+        future: provider.getStatusFatura(cartao.id!, mesFatura, anoFatura),
+        builder: (context, snapshot) {
+          final statusAtual = snapshot.data ?? cartao.status;
+
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Status da Fatura',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${cartao.nome} - ${Formatters.formatCurrency(totalFatura)}',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  _buildStatusOption(
+                    context,
+                    provider,
+                    cartao,
+                    StatusPagamento.aPagar,
+                    mesFatura,
+                    anoFatura,
+                    statusAtual,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStatusOption(
+                    context,
+                    provider,
+                    cartao,
+                    StatusPagamento.agendado,
+                    mesFatura,
+                    anoFatura,
+                    statusAtual,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStatusOption(
+                    context,
+                    provider,
+                    cartao,
+                    StatusPagamento.debitoAutomatico,
+                    mesFatura,
+                    anoFatura,
+                    statusAtual,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildStatusOption(
+                    context,
+                    provider,
+                    cartao,
+                    StatusPagamento.pago,
+                    mesFatura,
+                    anoFatura,
+                    statusAtual,
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildStatusOption(
+    BuildContext context,
+    ExpenseProvider provider,
+    CartaoCredito cartao,
+    StatusPagamento status,
+    int mesFatura,
+    int anoFatura,
+    StatusPagamento statusAtual,
+  ) {
+    final isSelected = statusAtual == status;
+    final statusInfo = _getStatusInfo(status);
+
+    return InkWell(
+      onTap: () {
+        provider.atualizarStatusFatura(
+          cartao.id!,
+          mesFatura,
+          anoFatura,
+          status,
+        );
+        Navigator.pop(context);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? (statusInfo['color'] as Color).withOpacity(0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected
+                ? statusInfo['color'] as Color
+                : AppTheme.textTertiary.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              statusInfo['icon'] as IconData,
+              color: statusInfo['color'] as Color,
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                statusInfo['text'] as String,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: statusInfo['color'] as Color,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle, color: statusInfo['color'] as Color),
+          ],
+        ),
+      ),
     );
   }
 }

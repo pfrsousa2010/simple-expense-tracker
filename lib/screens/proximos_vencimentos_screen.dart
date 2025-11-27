@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
 import '../widgets/despesa_item.dart';
+import '../models/despesa.dart';
+import '../utils/app_theme.dart';
 import 'editar_despesa_screen.dart';
+import 'editar_despesa_cartao_screen.dart';
 
 class ProximosVencimentosScreen extends StatelessWidget {
   const ProximosVencimentosScreen({super.key});
@@ -195,15 +198,38 @@ class ProximosVencimentosScreen extends StatelessWidget {
                                   despesa: despesa,
                                   categoria: categoria,
                                   showSwipeIcon: false,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => EditarDespesaScreen(
-                                          despesa: despesa,
+                                  onTap: () async {
+                                    if (despesa.isCartaoCredito &&
+                                        despesa.parcelaId != null &&
+                                        (despesa.tipoPagamento == TipoPagamentoCartao.parcelado ||
+                                            despesa.tipoPagamento == TipoPagamentoCartao.recorrente)) {
+                                      // Perguntar se quer editar apenas esta ou esta e as próximas
+                                      final opcaoEdicao = await _showEditParcelasConfirmation(
+                                        context,
+                                        despesa,
+                                        provider,
+                                      );
+                                      if (opcaoEdicao == null) return;
+                                      
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => EditarDespesaCartaoScreen(
+                                            despesa: despesa,
+                                            editarTodasParcelas: opcaoEdicao == 1, // 1 = esta e as próximas
+                                          ),
                                         ),
-                                      ),
-                                    );
+                                      );
+                                    } else {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => despesa.isCartaoCredito
+                                              ? EditarDespesaCartaoScreen(despesa: despesa)
+                                              : EditarDespesaScreen(despesa: despesa),
+                                        ),
+                                      );
+                                    }
                                   },
                                 ),
                               );
@@ -254,6 +280,71 @@ class ProximosVencimentosScreen extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+
+  Future<int?> _showEditParcelasConfirmation(
+    BuildContext context,
+    Despesa despesa,
+    ExpenseProvider provider,
+  ) async {
+    final tipoTexto = despesa.tipoPagamento == TipoPagamentoCartao.parcelado
+        ? 'parcelada'
+        : 'recorrente';
+    final itemTexto = despesa.tipoPagamento == TipoPagamentoCartao.parcelado
+        ? 'parcela'
+        : 'despesa';
+
+    int? totalFuturas;
+    if (despesa.tipoPagamento == TipoPagamentoCartao.parcelado &&
+        despesa.numeroParcela != null) {
+      final futuras = await provider.getDespesasParceladasFuturasNaoPagas(
+        despesa.parcelaId!,
+        despesa.numeroParcela!,
+      );
+      totalFuturas = futuras.length;
+    } else if (despesa.tipoPagamento == TipoPagamentoCartao.recorrente) {
+      final futuras = await provider.getDespesasRecorrentesFuturasNaoPagas(
+        despesa.parcelaId!,
+        despesa.mes,
+        despesa.ano,
+      );
+      totalFuturas = futuras.length;
+    }
+
+    if (totalFuturas == null || totalFuturas <= 1) {
+      return 0; // Apenas esta
+    }
+
+    return await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Editar Despesa ${tipoTexto[0].toUpperCase()}${tipoTexto.substring(1)}'),
+        content: Text(
+          'Esta despesa faz parte de uma compra $tipoTexto.\n\n'
+          'Deseja editar:\n'
+          '• Apenas esta $itemTexto\n'
+          '• Esta e as ${totalFuturas! - 1} próximas (${totalFuturas} no total)',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, null),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 0), // 0 = apenas esta
+            child: const Text('Apenas esta'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, 1), // 1 = esta e as próximas
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentColor,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Esta e as próximas (${totalFuturas})'),
+          ),
+        ],
       ),
     );
   }

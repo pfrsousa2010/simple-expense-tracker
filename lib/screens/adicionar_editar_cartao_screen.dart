@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
 import '../models/cartao_credito.dart';
 import '../utils/app_theme.dart';
+import '../widgets/dia_vencimento_selector_simples.dart';
 
 class AdicionarEditarCartaoScreen extends StatefulWidget {
   final CartaoCredito? cartao; // null para adicionar, não null para editar
@@ -22,6 +23,8 @@ class _AdicionarEditarCartaoScreenState
   final _bancoController = TextEditingController();
   final _numeroController = TextEditingController();
   int _corSelecionada = 0xFF2196F3; // Azul padrão
+  int? _diaVencimento;
+  int? _diaFechamento;
 
   final List<int> _coresDisponiveis = [
     0xFF2196F3, // Azul
@@ -30,10 +33,6 @@ class _AdicionarEditarCartaoScreenState
     0xFF9C27B0, // Roxo
     0xFFE91E63, // Rosa
     0xFF00BCD4, // Ciano
-    0xFFFF5722, // Vermelho
-    0xFF795548, // Marrom
-    0xFF607D8B, // Azul acinzentado
-    0xFF3F51B5, // Índigo
   ];
 
   @override
@@ -44,6 +43,8 @@ class _AdicionarEditarCartaoScreenState
       _bancoController.text = widget.cartao!.banco;
       _numeroController.text = widget.cartao!.numero;
       _corSelecionada = widget.cartao!.cor;
+      _diaVencimento = widget.cartao!.diaVencimento;
+      _diaFechamento = widget.cartao!.diaFechamento;
     }
   }
 
@@ -57,6 +58,27 @@ class _AdicionarEditarCartaoScreenState
 
   void _salvarCartao() {
     if (_formKey.currentState!.validate()) {
+      // Validar campos obrigatórios
+      if (_diaVencimento == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor, selecione o dia do vencimento da fatura'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (_diaFechamento == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Por favor, selecione o dia do fechamento da fatura'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       final provider = context.read<ExpenseProvider>();
 
       if (widget.cartao == null) {
@@ -66,6 +88,8 @@ class _AdicionarEditarCartaoScreenState
           banco: _bancoController.text,
           numero: _numeroController.text,
           cor: _corSelecionada,
+          diaVencimento: _diaVencimento,
+          diaFechamento: _diaFechamento,
         );
         provider.adicionarCartaoCredito(novoCartao);
       } else {
@@ -75,6 +99,8 @@ class _AdicionarEditarCartaoScreenState
           banco: _bancoController.text,
           numero: _numeroController.text,
           cor: _corSelecionada,
+          diaVencimento: _diaVencimento,
+          diaFechamento: _diaFechamento,
         );
         provider.atualizarCartaoCredito(cartaoAtualizado);
       }
@@ -219,9 +245,8 @@ class _AdicionarEditarCartaoScreenState
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: 12),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: _coresDisponiveis.map((cor) {
                   final isSelected = _corSelecionada == cor;
                   return GestureDetector(
@@ -301,18 +326,41 @@ class _AdicionarEditarCartaoScreenState
               TextFormField(
                 controller: _numeroController,
                 decoration: const InputDecoration(
-                  labelText: 'Número do Cartão',
-                  hintText: 'Últimos 4 dígitos ou número completo',
+                  labelText: 'Número do Cartão (Opcional)',
+                  hintText: 'Últimos 4 dígitos',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(4),
+                ],
                 onChanged: (_) => setState(() {}),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor, insira o número do cartão';
+                  if (value != null && value.isNotEmpty && value.length != 4) {
+                    return 'Por favor, insira os 4 últimos dígitos';
                   }
                   return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              DiaVencimentoSelectorSimples(
+                title: 'Dia do Vencimento da Fatura *',
+                initialValue: _diaVencimento,
+                onChanged: (value) {
+                  setState(() {
+                    _diaVencimento = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 24),
+              DiaVencimentoSelectorSimples(
+                title: 'Dia do Fechamento da Fatura *',
+                initialValue: _diaFechamento,
+                onChanged: (value) {
+                  setState(() {
+                    _diaFechamento = value;
+                  });
                 },
               ),
             ],

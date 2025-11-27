@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
 import '../models/despesa.dart';
@@ -19,16 +20,35 @@ class _AdicionarDespesaScreenState extends State<AdicionarDespesaScreen> {
   final _formKey = GlobalKey<FormState>();
   final _descricaoController = TextEditingController();
   final _valorController = TextEditingController();
+  final _estabelecimentoController = TextEditingController();
   Categoria? _categoriaSelecionada;
   int? _diaVencimento;
-  StatusPagamento _statusSelecionado = StatusPagamento.aPagar;
+  StatusPagamento _statusSelecionado =
+      StatusPagamento.pago; // Padrão: Pago (despesa não fixa)
   bool _isFixa = false;
+  DateTime? _dataCompra;
 
   @override
   void dispose() {
     _descricaoController.dispose();
     _valorController.dispose();
+    _estabelecimentoController.dispose();
     super.dispose();
+  }
+
+  Future<void> _selecionarDataCompra() async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _dataCompra ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      locale: const Locale('pt', 'BR'),
+    );
+    if (picked != null && picked != _dataCompra) {
+      setState(() {
+        _dataCompra = picked;
+      });
+    }
   }
 
   Map<String, dynamic> _getStatusInfo(StatusPagamento status) {
@@ -128,9 +148,15 @@ class _AdicionarDespesaScreenState extends State<AdicionarDespesaScreen> {
       categoriaId: _categoriaSelecionada!.id!,
       mes: provider.mesAtual.month,
       ano: provider.mesAtual.year,
-      diaVencimento: _diaVencimento,
+      diaVencimento: _isFixa ? _diaVencimento : null,
       status: _statusSelecionado,
       isFixa: _isFixa,
+      dataCompra: _isFixa ? null : _dataCompra,
+      estabelecimento: _isFixa
+          ? null
+          : (_estabelecimentoController.text.isEmpty
+                ? null
+                : _estabelecimentoController.text),
     );
 
     provider.adicionarDespesa(despesa);
@@ -266,27 +292,76 @@ class _AdicionarDespesaScreenState extends State<AdicionarDespesaScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              DiaVencimentoSelectorSimples(
-                initialValue: _diaVencimento,
-                onChanged: (value) {
-                  setState(() {
-                    _diaVencimento = value;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
               Card(
                 child: CheckboxListTile(
                   value: _isFixa,
                   onChanged: (value) {
                     setState(() {
                       _isFixa = value ?? false;
+                      if (_isFixa) {
+                        // Limpar campos de despesa não fixa
+                        _estabelecimentoController.clear();
+                        _dataCompra = null;
+                        // Status padrão para despesa fixa: A Pagar
+                        _statusSelecionado = StatusPagamento.aPagar;
+                      } else {
+                        // Limpar campo de dia de vencimento
+                        _diaVencimento = null;
+                        // Status padrão para despesa não fixa: Pago
+                        _statusSelecionado = StatusPagamento.pago;
+                      }
                     });
                   },
                   title: const Text('Despesa Fixa'),
                   subtitle: const Text('Pode ser reaproveitada mensalmente'),
                 ),
               ),
+              if (_isFixa) ...[
+                const SizedBox(height: 16),
+                DiaVencimentoSelectorSimples(
+                  initialValue: _diaVencimento,
+                  onChanged: (value) {
+                    setState(() {
+                      _diaVencimento = value;
+                    });
+                  },
+                ),
+              ] else ...[
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _estabelecimentoController,
+                  decoration: const InputDecoration(
+                    labelText: 'Estabelecimento',
+                    hintText: 'Ex: Supermercado XYZ',
+                    border: OutlineInputBorder(),
+                  ),
+                  textCapitalization: TextCapitalization.words,
+                ),
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: _selecionarDataCompra,
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'Data da Compra',
+                      border: OutlineInputBorder(),
+                      suffixIcon: Icon(Icons.calendar_today),
+                    ),
+                    child: Text(
+                      _dataCompra != null
+                          ? DateFormat(
+                              'dd/MM/yyyy',
+                              'pt_BR',
+                            ).format(_dataCompra!)
+                          : 'Selecione a data',
+                      style: TextStyle(
+                        color: _dataCompra != null
+                            ? null
+                            : AppTheme.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

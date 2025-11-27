@@ -29,7 +29,7 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 11,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -69,7 +69,16 @@ class DatabaseService {
         status INTEGER NOT NULL,
         isFixa INTEGER NOT NULL,
         dataCriacao TEXT NOT NULL,
-        FOREIGN KEY (categoriaId) REFERENCES categorias (id)
+        dataCompra TEXT,
+        cartaoCreditoId INTEGER,
+        estabelecimento TEXT,
+        isCompraOnline INTEGER NOT NULL DEFAULT 0,
+        tipoPagamento INTEGER,
+        numeroParcela INTEGER,
+        totalParcelas INTEGER,
+        parcelaId TEXT,
+        FOREIGN KEY (categoriaId) REFERENCES categorias (id),
+        FOREIGN KEY (cartaoCreditoId) REFERENCES cartoes_credito (id)
       )
     ''');
 
@@ -79,7 +88,22 @@ class DatabaseService {
         nome TEXT NOT NULL,
         banco TEXT NOT NULL,
         numero TEXT NOT NULL,
-        cor INTEGER NOT NULL
+        cor INTEGER NOT NULL,
+        diaVencimento INTEGER,
+        diaFechamento INTEGER,
+        status INTEGER NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE faturas_cartao (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cartaoId INTEGER NOT NULL,
+        mes INTEGER NOT NULL,
+        ano INTEGER NOT NULL,
+        status INTEGER NOT NULL,
+        FOREIGN KEY (cartaoId) REFERENCES cartoes_credito (id),
+        UNIQUE(cartaoId, mes, ano)
       )
     ''');
 
@@ -108,7 +132,6 @@ class DatabaseService {
         isPadrao: true,
       ),
       Categoria(nome: 'Pet', icone: '🐶', isPadrao: true),
-      Categoria(nome: 'Cartão de crédito', icone: '💳', isPadrao: true),
       Categoria(nome: 'Impostos', icone: '💰', isPadrao: true),
       Categoria(nome: 'Internet/Telefone', icone: '📱', isPadrao: true),
       Categoria(nome: 'Seguros', icone: '🛡️', isPadrao: true),
@@ -158,6 +181,88 @@ class DatabaseService {
         // Tornar a coluna NOT NULL após atualizar os valores
         // SQLite não suporta ALTER COLUMN, então precisamos recriar a tabela
         // Por enquanto, deixamos como nullable e tratamos no código
+      } catch (e) {
+        // Se a coluna já existir, ignora o erro
+      }
+    }
+    if (oldVersion < 5) {
+      // Adicionar colunas para despesas de cartão de crédito
+      try {
+        await db.execute(
+          'ALTER TABLE despesas ADD COLUMN cartaoCreditoId INTEGER',
+        );
+        await db.execute(
+          'ALTER TABLE despesas ADD COLUMN estabelecimento TEXT',
+        );
+        await db.execute(
+          'ALTER TABLE despesas ADD COLUMN isCompraOnline INTEGER NOT NULL DEFAULT 0',
+        );
+        await db.execute(
+          'ALTER TABLE despesas ADD COLUMN tipoPagamento INTEGER',
+        );
+        await db.execute(
+          'ALTER TABLE despesas ADD COLUMN numeroParcela INTEGER',
+        );
+        await db.execute(
+          'ALTER TABLE despesas ADD COLUMN totalParcelas INTEGER',
+        );
+        await db.execute('ALTER TABLE despesas ADD COLUMN parcelaId TEXT');
+      } catch (e) {
+        // Se as colunas já existirem, ignora o erro
+      }
+    }
+    if (oldVersion < 6) {
+      // Adicionar coluna de vencimento na tabela cartoes_credito
+      try {
+        await db.execute(
+          'ALTER TABLE cartoes_credito ADD COLUMN diaVencimento INTEGER',
+        );
+      } catch (e) {
+        // Se a coluna já existir, ignora o erro
+      }
+    }
+    if (oldVersion < 7) {
+      // Adicionar coluna dataCompra na tabela despesas
+      try {
+        await db.execute('ALTER TABLE despesas ADD COLUMN dataCompra TEXT');
+      } catch (e) {
+        // Se a coluna já existir, ignora o erro
+      }
+    }
+    if (oldVersion < 8) {
+      // Adicionar coluna status na tabela cartoes_credito
+      try {
+        await db.execute(
+          'ALTER TABLE cartoes_credito ADD COLUMN status INTEGER NOT NULL DEFAULT 3',
+        );
+      } catch (e) {
+        // Se a coluna já existir, ignora o erro
+      }
+    }
+    if (oldVersion < 9) {
+      // Criar tabela de faturas de cartão para status por mês/ano
+      try {
+        await db.execute('''
+          CREATE TABLE faturas_cartao (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            cartaoId INTEGER NOT NULL,
+            mes INTEGER NOT NULL,
+            ano INTEGER NOT NULL,
+            status INTEGER NOT NULL,
+            FOREIGN KEY (cartaoId) REFERENCES cartoes_credito (id),
+            UNIQUE(cartaoId, mes, ano)
+          )
+        ''');
+      } catch (e) {
+        // Se a tabela já existir, ignora o erro
+      }
+    }
+    if (oldVersion < 11) {
+      // Adicionar coluna isCompraOnline
+      try {
+        await db.execute(
+          'ALTER TABLE despesas ADD COLUMN isCompraOnline INTEGER NOT NULL DEFAULT 0',
+        );
       } catch (e) {
         // Se a coluna já existir, ignora o erro
       }
@@ -353,6 +458,111 @@ class DatabaseService {
     return db.delete('despesas', where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<List<Despesa>> getDespesasPorParcelaId(String parcelaId) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'despesas',
+      where: 'parcelaId = ?',
+      whereArgs: [parcelaId],
+      orderBy: 'ano ASC, mes ASC, numeroParcela ASC',
+    );
+    return result.map((map) => Despesa.fromMap(map)).toList();
+  }
+
+  Future<List<Despesa>> getDespesasNaoPagasPorParcelaId(
+    String parcelaId,
+  ) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'despesas',
+      where: 'parcelaId = ? AND status != ?',
+      whereArgs: [parcelaId, StatusPagamento.pago.index],
+      orderBy: 'ano ASC, mes ASC, numeroParcela ASC',
+    );
+    return result.map((map) => Despesa.fromMap(map)).toList();
+  }
+
+  Future<List<Despesa>> getDespesasRecorrentesPorParcelaId(
+    String parcelaId,
+  ) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'despesas',
+      where: 'parcelaId = ? AND tipoPagamento = ?',
+      whereArgs: [parcelaId, TipoPagamentoCartao.recorrente.index],
+      orderBy: 'ano ASC, mes ASC',
+    );
+    return result.map((map) => Despesa.fromMap(map)).toList();
+  }
+
+  Future<List<Despesa>> getDespesasRecorrentesNaoPagasPorParcelaId(
+    String parcelaId,
+  ) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'despesas',
+      where: 'parcelaId = ? AND tipoPagamento = ? AND status != ?',
+      whereArgs: [
+        parcelaId,
+        TipoPagamentoCartao.recorrente.index,
+        StatusPagamento.pago.index,
+      ],
+      orderBy: 'ano ASC, mes ASC',
+    );
+    return result.map((map) => Despesa.fromMap(map)).toList();
+  }
+
+  Future<List<Despesa>> getDespesasParceladasFuturasNaoPagas(
+    String parcelaId,
+    int numeroParcelaAtual,
+  ) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'despesas',
+      where:
+          'parcelaId = ? AND tipoPagamento = ? AND status != ? AND numeroParcela >= ?',
+      whereArgs: [
+        parcelaId,
+        TipoPagamentoCartao.parcelado.index,
+        StatusPagamento.pago.index,
+        numeroParcelaAtual,
+      ],
+      orderBy: 'ano ASC, mes ASC, numeroParcela ASC',
+    );
+    return result.map((map) => Despesa.fromMap(map)).toList();
+  }
+
+  Future<List<Despesa>> getDespesasRecorrentesFuturasNaoPagas(
+    String parcelaId,
+    int mesAtual,
+    int anoAtual,
+  ) async {
+    final db = await instance.database;
+    // Buscar despesas que são do mesmo mês/ano ou futuras
+    final result = await db.query(
+      'despesas',
+      where:
+          'parcelaId = ? AND tipoPagamento = ? AND status != ? AND (ano > ? OR (ano = ? AND mes >= ?))',
+      whereArgs: [
+        parcelaId,
+        TipoPagamentoCartao.recorrente.index,
+        StatusPagamento.pago.index,
+        anoAtual,
+        anoAtual,
+        mesAtual,
+      ],
+      orderBy: 'ano ASC, mes ASC',
+    );
+    return result.map((map) => Despesa.fromMap(map)).toList();
+  }
+
+  Future<void> deleteDespesas(List<int> ids) async {
+    final db = await instance.database;
+    for (var id in ids) {
+      await db.delete('despesas', where: 'id = ?', whereArgs: [id]);
+    }
+  }
+
   Future<void> copiarDespesasFixasParaMes(
     int mesOrigem,
     int anoOrigem,
@@ -414,9 +624,85 @@ class DatabaseService {
     );
   }
 
+  Future<int> contarDespesasPorCartao(int cartaoId) async {
+    final db = await instance.database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as total FROM despesas WHERE cartaoCreditoId = ?',
+      [cartaoId],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
   Future<int> deleteCartaoCredito(int id) async {
     final db = await instance.database;
+    // Deletar todas as despesas associadas ao cartão
+    await db.delete('despesas', where: 'cartaoCreditoId = ?', whereArgs: [id]);
+    // Deletar faturas associadas
+    await db.delete('faturas_cartao', where: 'cartaoId = ?', whereArgs: [id]);
     return db.delete('cartoes_credito', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // CRUD Faturas de Cartão (status por mês/ano)
+  Future<void> atualizarStatusFatura(
+    int cartaoId,
+    int mes,
+    int ano,
+    StatusPagamento status,
+  ) async {
+    final db = await instance.database;
+    // Verificar se já existe uma fatura para este cartão/mês/ano
+    final existing = await db.query(
+      'faturas_cartao',
+      where: 'cartaoId = ? AND mes = ? AND ano = ?',
+      whereArgs: [cartaoId, mes, ano],
+    );
+
+    if (existing.isNotEmpty) {
+      // Atualizar existente
+      await db.update(
+        'faturas_cartao',
+        {'status': status.index},
+        where: 'cartaoId = ? AND mes = ? AND ano = ?',
+        whereArgs: [cartaoId, mes, ano],
+      );
+    } else {
+      // Criar nova
+      await db.insert('faturas_cartao', {
+        'cartaoId': cartaoId,
+        'mes': mes,
+        'ano': ano,
+        'status': status.index,
+      });
+    }
+  }
+
+  Future<StatusPagamento?> getStatusFatura(
+    int cartaoId,
+    int mes,
+    int ano,
+  ) async {
+    final db = await instance.database;
+    final result = await db.query(
+      'faturas_cartao',
+      where: 'cartaoId = ? AND mes = ? AND ano = ?',
+      whereArgs: [cartaoId, mes, ano],
+    );
+
+    if (result.isNotEmpty) {
+      return StatusPagamento.values[result.first['status'] as int];
+    }
+    return null; // Retorna null se não houver status específico (usa padrão do cartão)
+  }
+
+  Future<List<Map<String, dynamic>>> buscarTodasFaturasCartao() async {
+    final db = await instance.database;
+    return await db.query('faturas_cartao', orderBy: 'ano DESC, mes DESC');
+  }
+
+  Future<List<CartaoCredito>> buscarTodosCartoesCredito() async {
+    final db = await instance.database;
+    final result = await db.query('cartoes_credito', orderBy: 'nome ASC');
+    return result.map((map) => CartaoCredito.fromMap(map)).toList();
   }
 
   Future<void> close() async {

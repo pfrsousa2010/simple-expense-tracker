@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 class DiaVencimentoSelectorSimples extends StatefulWidget {
   final int? initialValue;
   final Function(int?) onChanged;
+  final String? title;
 
   const DiaVencimentoSelectorSimples({
     super.key,
     this.initialValue,
     required this.onChanged,
+    this.title,
   });
 
   @override
@@ -57,9 +59,9 @@ class _DiaVencimentoSelectorSimplesState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Dia do Vencimento (Opcional)',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        Text(
+          widget.title ?? 'Dia do Vencimento (Opcional)',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 12),
 

@@ -243,6 +243,16 @@ class CartoesCreditoScreen extends StatelessWidget {
                           fontSize: 14,
                         ),
                       ),
+                      if (cartao.diaVencimento != null && cartao.diaFechamento != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Vence dia ${cartao.diaVencimento} • Fecha dia ${cartao.diaFechamento}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -259,11 +269,52 @@ class CartoesCreditoScreen extends StatelessWidget {
     ExpenseProvider provider,
     CartaoCredito cartao,
   ) async {
+    // Contar despesas associadas ao cartão
+    final totalDespesas = await provider.contarDespesasPorCartao(cartao.id!);
+
     bool? result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Excluir Cartão'),
-        content: Text('Deseja realmente excluir "${cartao.nome}"?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Deseja realmente excluir "${cartao.nome}"?'),
+            if (totalDespesas > 0) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.warningColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppTheme.warningColor.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      color: AppTheme.warningColor,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Ao excluir este cartão, todas as $totalDespesas despesa${totalDespesas > 1 ? 's' : ''} associada${totalDespesas > 1 ? 's' : ''} serão removida${totalDespesas > 1 ? 's' : ''} permanentemente.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.warningColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

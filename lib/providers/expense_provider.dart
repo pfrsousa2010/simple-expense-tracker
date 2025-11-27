@@ -220,6 +220,185 @@ class ExpenseProvider with ChangeNotifier {
     await carregarDados();
   }
 
+  Future<void> deletarDespesas(List<int> ids) async {
+    for (var id in ids) {
+      await _notification.cancelarNotificacao(id);
+    }
+    await _db.deleteDespesas(ids);
+    await carregarDados();
+  }
+
+  Future<List<Despesa>> getDespesasPorParcelaId(String parcelaId) async {
+    return await _db.getDespesasPorParcelaId(parcelaId);
+  }
+
+  Future<List<Despesa>> getDespesasNaoPagasPorParcelaId(String parcelaId) async {
+    return await _db.getDespesasNaoPagasPorParcelaId(parcelaId);
+  }
+
+  Future<List<Despesa>> getDespesasRecorrentesPorParcelaId(String parcelaId) async {
+    return await _db.getDespesasRecorrentesPorParcelaId(parcelaId);
+  }
+
+  Future<List<Despesa>> getDespesasRecorrentesNaoPagasPorParcelaId(
+    String parcelaId,
+  ) async {
+    return await _db.getDespesasRecorrentesNaoPagasPorParcelaId(parcelaId);
+  }
+
+  Future<List<Despesa>> getDespesasParceladasFuturasNaoPagas(
+    String parcelaId,
+    int numeroParcelaAtual,
+  ) async {
+    return await _db.getDespesasParceladasFuturasNaoPagas(
+      parcelaId,
+      numeroParcelaAtual,
+    );
+  }
+
+  Future<List<Despesa>> getDespesasRecorrentesFuturasNaoPagas(
+    String parcelaId,
+    int mesAtual,
+    int anoAtual,
+  ) async {
+    return await _db.getDespesasRecorrentesFuturasNaoPagas(
+      parcelaId,
+      mesAtual,
+      anoAtual,
+    );
+  }
+
+  Future<void> atualizarTodasParcelas(
+    String parcelaId,
+    Despesa despesaAtualizada,
+  ) async {
+    final todasParcelas = await _db.getDespesasPorParcelaId(parcelaId);
+    
+    for (var parcela in todasParcelas) {
+      if (parcela.id != null) {
+        // Cancelar notificação antiga
+        try {
+          await _notification.cancelarNotificacao(parcela.id!);
+        } catch (e) {
+          // Ignora erros
+        }
+
+        // Atualizar parcela mantendo número da parcela e data
+        // Ajustar data de compra para o mês/ano da parcela, mantendo o dia
+        DateTime? dataCompraParcela;
+        if (despesaAtualizada.dataCompra != null) {
+          final diaCompra = despesaAtualizada.dataCompra!.day;
+          try {
+            dataCompraParcela = DateTime(parcela.ano, parcela.mes, diaCompra);
+          } catch (e) {
+            // Se o dia não for válido para o mês, usar o último dia válido
+            final ultimoDia = DateTime(parcela.ano, parcela.mes + 1, 0).day;
+            dataCompraParcela = DateTime(parcela.ano, parcela.mes, diaCompra > ultimoDia ? ultimoDia : diaCompra);
+          }
+        }
+        
+        final parcelaAtualizada = parcela.copyWith(
+          descricao: despesaAtualizada.descricao,
+          valor: despesaAtualizada.valor,
+          categoriaId: despesaAtualizada.categoriaId,
+          cartaoCreditoId: despesaAtualizada.cartaoCreditoId,
+          estabelecimento: despesaAtualizada.estabelecimento,
+          isCompraOnline: despesaAtualizada.isCompraOnline,
+          tipoPagamento: despesaAtualizada.tipoPagamento,
+          dataCompra: dataCompraParcela,
+        );
+
+        await _db.updateDespesa(parcelaAtualizada);
+
+        // Reagendar notificação se necessário
+        if (parcelaAtualizada.diaVencimento != null) {
+          try {
+            await _notification.agendarNotificacaoVencimento(parcelaAtualizada);
+          } catch (e) {
+            // Ignora erros
+          }
+        }
+      }
+    }
+
+    await carregarDados();
+  }
+
+  Future<void> atualizarParcelasFuturas(
+    String parcelaId,
+    Despesa despesaAtualizada,
+    bool isParcelado,
+    int? numeroParcelaAtual,
+    int? mesAtual,
+    int? anoAtual,
+  ) async {
+    List<Despesa> parcelasFuturas;
+    
+    if (isParcelado && numeroParcelaAtual != null) {
+      parcelasFuturas = await _db.getDespesasParceladasFuturasNaoPagas(
+        parcelaId,
+        numeroParcelaAtual,
+      );
+    } else if (!isParcelado && mesAtual != null && anoAtual != null) {
+      parcelasFuturas = await _db.getDespesasRecorrentesFuturasNaoPagas(
+        parcelaId,
+        mesAtual,
+        anoAtual,
+      );
+    } else {
+      return; // Não há despesas futuras para atualizar
+    }
+    
+    for (var parcela in parcelasFuturas) {
+      if (parcela.id != null) {
+        // Cancelar notificação antiga
+        try {
+          await _notification.cancelarNotificacao(parcela.id!);
+        } catch (e) {
+          // Ignora erros
+        }
+
+        // Atualizar parcela mantendo número da parcela e data
+        // Ajustar data de compra para o mês/ano da parcela, mantendo o dia
+        DateTime? dataCompraParcela;
+        if (despesaAtualizada.dataCompra != null) {
+          final diaCompra = despesaAtualizada.dataCompra!.day;
+          try {
+            dataCompraParcela = DateTime(parcela.ano, parcela.mes, diaCompra);
+          } catch (e) {
+            // Se o dia não for válido para o mês, usar o último dia válido
+            final ultimoDia = DateTime(parcela.ano, parcela.mes + 1, 0).day;
+            dataCompraParcela = DateTime(parcela.ano, parcela.mes, diaCompra > ultimoDia ? ultimoDia : diaCompra);
+          }
+        }
+        
+        final parcelaAtualizada = parcela.copyWith(
+          descricao: despesaAtualizada.descricao,
+          valor: despesaAtualizada.valor,
+          categoriaId: despesaAtualizada.categoriaId,
+          cartaoCreditoId: despesaAtualizada.cartaoCreditoId,
+          estabelecimento: despesaAtualizada.estabelecimento,
+          isCompraOnline: despesaAtualizada.isCompraOnline,
+          tipoPagamento: despesaAtualizada.tipoPagamento,
+          dataCompra: dataCompraParcela,
+        );
+
+        await _db.updateDespesa(parcelaAtualizada);
+
+        // Reagendar notificação se necessário
+        if (parcelaAtualizada.diaVencimento != null) {
+          try {
+            await _notification.agendarNotificacaoVencimento(parcelaAtualizada);
+          } catch (e) {
+            // Ignora erros
+          }
+        }
+      }
+    }
+
+    await carregarDados();
+  }
+
   Future<void> copiarDespesasFixas(int mesDestino, int anoDestino) async {
     await _db.copiarDespesasFixasParaMes(
       _mesAtual.month,
@@ -310,6 +489,28 @@ class ExpenseProvider with ChangeNotifier {
   Future<void> atualizarCartaoCredito(CartaoCredito cartao) async {
     await _db.updateCartaoCredito(cartao);
     await carregarDados();
+  }
+
+  Future<void> atualizarStatusFatura(
+    int cartaoId,
+    int mes,
+    int ano,
+    StatusPagamento status,
+  ) async {
+    await _db.atualizarStatusFatura(cartaoId, mes, ano, status);
+    await carregarDados();
+  }
+
+  Future<StatusPagamento?> getStatusFatura(
+    int cartaoId,
+    int mes,
+    int ano,
+  ) async {
+    return await _db.getStatusFatura(cartaoId, mes, ano);
+  }
+
+  Future<int> contarDespesasPorCartao(int cartaoId) async {
+    return await _db.contarDespesasPorCartao(cartaoId);
   }
 
   Future<void> deletarCartaoCredito(int id) async {
