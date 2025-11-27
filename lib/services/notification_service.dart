@@ -403,7 +403,12 @@ class NotificationService {
   }
 
   Future<void> cancelarNotificacao(int despesaId) async {
-    await _notifications.cancel(despesaId);
+    try {
+      await _notifications.cancel(despesaId);
+    } catch (e) {
+      // Ignora erros ao cancelar notificação (pode não existir ou já ter sido cancelada)
+      // Isso evita que erros ao cancelar notificação interrompam operações importantes
+    }
   }
 
   Future<void> cancelarTodasNotificacoes() async {

@@ -546,19 +546,47 @@ class _DespesasScreenState extends State<DespesasScreen> {
                 child: const Text('Cancelar'),
               ),
               TextButton(
-                onPressed: () {
-                  provider.deletarDespesa(despesa.id!);
-                  Navigator.pop(context, true);
+                onPressed: () async {
+                  try {
+                    await provider.deletarDespesa(despesa.id!);
+                    if (context.mounted) {
+                      Navigator.pop(context, true);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      Navigator.pop(context, false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Erro ao excluir despesa: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 },
                 child: const Text('Apenas esta'),
               ),
               ElevatedButton(
-                onPressed: () {
-                  final idsParaExcluir = parcelasFuturasNaoPagas
-                      .map((d) => d.id!)
-                      .toList();
-                  provider.deletarDespesas(idsParaExcluir);
-                  Navigator.pop(context, true);
+                onPressed: () async {
+                  try {
+                    final idsParaExcluir = parcelasFuturasNaoPagas
+                        .map((d) => d.id!)
+                        .toList();
+                    await provider.deletarDespesas(idsParaExcluir);
+                    if (context.mounted) {
+                      Navigator.pop(context, true);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      Navigator.pop(context, false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Erro ao excluir despesas: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.secondaryColor,
@@ -602,19 +630,47 @@ class _DespesasScreenState extends State<DespesasScreen> {
                 child: const Text('Cancelar'),
               ),
               TextButton(
-                onPressed: () {
-                  provider.deletarDespesa(despesa.id!);
-                  Navigator.pop(context, true);
+                onPressed: () async {
+                  try {
+                    await provider.deletarDespesa(despesa.id!);
+                    if (context.mounted) {
+                      Navigator.pop(context, true);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      Navigator.pop(context, false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Erro ao excluir despesa: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 },
                 child: const Text('Apenas esta'),
               ),
               ElevatedButton(
-                onPressed: () {
-                  final idsParaExcluir = recorrentesFuturasNaoPagas
-                      .map((d) => d.id!)
-                      .toList();
-                  provider.deletarDespesas(idsParaExcluir);
-                  Navigator.pop(context, true);
+                onPressed: () async {
+                  try {
+                    final idsParaExcluir = recorrentesFuturasNaoPagas
+                        .map((d) => d.id!)
+                        .toList();
+                    await provider.deletarDespesas(idsParaExcluir);
+                    if (context.mounted) {
+                      Navigator.pop(context, true);
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      Navigator.pop(context, false);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Erro ao excluir despesas: $e'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.secondaryColor,
@@ -640,9 +696,23 @@ class _DespesasScreenState extends State<DespesasScreen> {
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () {
-              provider.deletarDespesa(despesa.id!);
-              Navigator.pop(context, true);
+            onPressed: () async {
+              try {
+                await provider.deletarDespesa(despesa.id!);
+                if (context.mounted) {
+                  Navigator.pop(context, true);
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  Navigator.pop(context, false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erro ao excluir despesa: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.secondaryColor,

@@ -120,7 +120,7 @@ class ExpenseProvider with ChangeNotifier {
   Future<void> deletarCategoria(int id) async {
     // Buscar despesas associadas para cancelar notificações
     final despesas = await _db.getDespesasPorCategoriaId(id);
-    
+
     // Cancelar notificações de todas as despesas
     for (var despesa in despesas) {
       if (despesa.id != null) {
@@ -134,7 +134,7 @@ class ExpenseProvider with ChangeNotifier {
         }
       }
     }
-    
+
     // Deletar categoria (que também deleta as despesas)
     await _db.deleteCategoria(id);
     await carregarDados();
@@ -215,15 +215,35 @@ class ExpenseProvider with ChangeNotifier {
   }
 
   Future<void> deletarDespesa(int id) async {
-    await _notification.cancelarNotificacao(id);
+    // Tentar cancelar notificação, mas não interromper se falhar
+    try {
+      await _notification.cancelarNotificacao(id);
+    } catch (e) {
+      // Ignora erros ao cancelar notificação para garantir que a deleção aconteça
+      if (kDebugMode) {
+        print('Erro ao cancelar notificação na deleção: $e');
+      }
+    }
+
+    // Sempre deletar do banco, mesmo se o cancelamento de notificação falhar
     await _db.deleteDespesa(id);
     await carregarDados();
   }
 
   Future<void> deletarDespesas(List<int> ids) async {
+    // Tentar cancelar notificações, mas não interromper se falhar
     for (var id in ids) {
-      await _notification.cancelarNotificacao(id);
+      try {
+        await _notification.cancelarNotificacao(id);
+      } catch (e) {
+        // Ignora erros ao cancelar notificação para garantir que a deleção aconteça
+        if (kDebugMode) {
+          print('Erro ao cancelar notificação na deleção: $e');
+        }
+      }
     }
+
+    // Sempre deletar do banco, mesmo se o cancelamento de notificação falhar
     await _db.deleteDespesas(ids);
     await carregarDados();
   }
@@ -232,11 +252,15 @@ class ExpenseProvider with ChangeNotifier {
     return await _db.getDespesasPorParcelaId(parcelaId);
   }
 
-  Future<List<Despesa>> getDespesasNaoPagasPorParcelaId(String parcelaId) async {
+  Future<List<Despesa>> getDespesasNaoPagasPorParcelaId(
+    String parcelaId,
+  ) async {
     return await _db.getDespesasNaoPagasPorParcelaId(parcelaId);
   }
 
-  Future<List<Despesa>> getDespesasRecorrentesPorParcelaId(String parcelaId) async {
+  Future<List<Despesa>> getDespesasRecorrentesPorParcelaId(
+    String parcelaId,
+  ) async {
     return await _db.getDespesasRecorrentesPorParcelaId(parcelaId);
   }
 
@@ -273,7 +297,7 @@ class ExpenseProvider with ChangeNotifier {
     Despesa despesaAtualizada,
   ) async {
     final todasParcelas = await _db.getDespesasPorParcelaId(parcelaId);
-    
+
     for (var parcela in todasParcelas) {
       if (parcela.id != null) {
         // Cancelar notificação antiga
@@ -293,10 +317,14 @@ class ExpenseProvider with ChangeNotifier {
           } catch (e) {
             // Se o dia não for válido para o mês, usar o último dia válido
             final ultimoDia = DateTime(parcela.ano, parcela.mes + 1, 0).day;
-            dataCompraParcela = DateTime(parcela.ano, parcela.mes, diaCompra > ultimoDia ? ultimoDia : diaCompra);
+            dataCompraParcela = DateTime(
+              parcela.ano,
+              parcela.mes,
+              diaCompra > ultimoDia ? ultimoDia : diaCompra,
+            );
           }
         }
-        
+
         final parcelaAtualizada = parcela.copyWith(
           descricao: despesaAtualizada.descricao,
           valor: despesaAtualizada.valor,
@@ -333,7 +361,7 @@ class ExpenseProvider with ChangeNotifier {
     int? anoAtual,
   ) async {
     List<Despesa> parcelasFuturas;
-    
+
     if (isParcelado && numeroParcelaAtual != null) {
       parcelasFuturas = await _db.getDespesasParceladasFuturasNaoPagas(
         parcelaId,
@@ -348,7 +376,7 @@ class ExpenseProvider with ChangeNotifier {
     } else {
       return; // Não há despesas futuras para atualizar
     }
-    
+
     for (var parcela in parcelasFuturas) {
       if (parcela.id != null) {
         // Cancelar notificação antiga
@@ -368,10 +396,14 @@ class ExpenseProvider with ChangeNotifier {
           } catch (e) {
             // Se o dia não for válido para o mês, usar o último dia válido
             final ultimoDia = DateTime(parcela.ano, parcela.mes + 1, 0).day;
-            dataCompraParcela = DateTime(parcela.ano, parcela.mes, diaCompra > ultimoDia ? ultimoDia : diaCompra);
+            dataCompraParcela = DateTime(
+              parcela.ano,
+              parcela.mes,
+              diaCompra > ultimoDia ? ultimoDia : diaCompra,
+            );
           }
         }
-        
+
         final parcelaAtualizada = parcela.copyWith(
           descricao: despesaAtualizada.descricao,
           valor: despesaAtualizada.valor,
